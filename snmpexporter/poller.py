@@ -3,14 +3,11 @@ import collections
 import logging
 import re
 
-import actions
-import config
 import multiprocessing
 import snmp
-import stage
 
 
-# How many sub-workers to spawn to enumerate VLAN OIDs
+# How many sub-pollers to spawn to enumerate VLAN OIDs
 VLAN_MAP_POOL = 2
 
 
@@ -47,23 +44,15 @@ def _poll(data):
   return results, errors, timeouts
 
 
-class Worker(object):
+class Poller(object):
 
-  def __init__(self):
-    super(Worker, self).__init__()
+  def __init__(self, config):
+    super(Poller, self).__init__()
     self.model_oid_cache = {}
     self.model_oid_cache_incarnation = 0
     self.pool = multiprocessing.Pool(processes=VLAN_MAP_POOL)
 
   def gather_oids(self, target, model):
-    if config.incarnation() != self.model_oid_cache_incarnation:
-      self.model_oid_cache_incarnation = config.incarnation()
-      self.model_oid_cache = {}
-
-    cache_key = (target.layer, model)
-    if cache_key in self.model_oid_cache:
-      return self.model_oid_cache[cache_key]
-
     oids = set()
     vlan_aware_oids = set()
     for collection_name, collection in config.get('collection').items():
@@ -82,11 +71,10 @@ class Worker(object):
             vlan_aware_oids.update(set(collection['oids']))
           else:
             oids.update(set(collection['oids']))
-    self.model_oid_cache[cache_key] = (list(oids), list(vlan_aware_oids))
-    return self.model_oid_cache[cache_key]
+    return (list(oids), list(vlan_aware_oids))
 
   def process_overrides(self, results):
-    overrides = config.get('worker', 'override')
+    overrides = config.get('poller', 'override')
     if not overrides:
       return results
     overridden_oids = set(overrides.keys())
@@ -99,12 +87,12 @@ class Worker(object):
             result.value, overrides[root])
     return overriden_results
 
-  def do_snmp_walk(self, run, target):
+  def poll(self, target):
     results, errors, timeouts = self._walk(target)
     results = results if results else {}
     logging.debug('Done SNMP poll (%d objects) for "%s"',
         len(list(results.keys())), target.host)
-    yield actions.Result(target, results, actions.Statistics(timeouts, errors))
+    return results, actions.Statistics(timeouts, errors)
 
   def _walk(self, target):
     try:
@@ -146,9 +134,3 @@ class Worker(object):
       errors += part_errors
       timeouts += part_timeouts
     return results, errors, timeouts
-
-
-if __name__ == '__main__':
-  worker = stage.Stage(Worker())
-  worker.listen(actions.SnmpWalk)
-  worker.run()

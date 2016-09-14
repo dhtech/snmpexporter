@@ -23,7 +23,8 @@ distclean: clean
 
 test:
 	$(COVERAGE) erase
-	echo $(wildcard */*_test.py) | xargs -n 1 $(COVERAGE) run -p
+	PYTHONPATH=$(CURDIR) echo $(wildcard */*_test.py) | \
+	  xargs -n 1 $(COVERAGE) run -p
 	echo $(wildcard *_test.py) | xargs -n 1 $(COVERAGE) run -p
 	$(COVERAGE) combine
 	$(COVERAGE) report -m

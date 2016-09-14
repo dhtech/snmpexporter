@@ -5,8 +5,6 @@ import collections
 BaseRunInformation = collections.namedtuple('RunInformation',
         ('tag', 'debug', 'trace'))
 
-AnnotatedResultEntry = collections.namedtuple('AnnotatedResultEntry',
-    ('data', 'mib', 'obj', 'index', 'labels'))
 
 Statistics = collections.namedtuple('Statistics', ('timeouts', 'errors'))
 

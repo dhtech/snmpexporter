@@ -1,13 +1,11 @@
 import binascii
 import collections
-import mock
 import unittest
 import yaml
 
-import annotator
-import actions
-import config
-import snmp
+from snmpexporter import config
+from snmpexporter import annotator
+from snmpexporter import snmp
 
 
 MIB_RESOLVER = {
@@ -50,32 +48,21 @@ class MockMibResolver(object):
 class TestAnnotator(unittest.TestCase):
 
   def setUp(self):
-    self.logic = annotator.Annotator()
     self.mibresolver = MockMibResolver()
-    self.logic._mibresolver = self.mibresolver
-    self.run = actions.RunInformation()
-    config.refresh()
 
-  def createResult(self, results, timeouts=0, errors=0):
-    target = snmp.SnmpTarget(
-        'test1', '1.2.3.4', 1234, 'access',
-        version=2, community='REMOVED', port=161)
-    stats = actions.Statistics(timeouts, errors)
-    return actions.Result(target, results, stats)
-
-  @mock.patch('config.Config.load')
-  def runTest(self, expected_entries, result, config, mock_config):
-    mock_config.return_value = yaml.load(config)
-    expected_output = [actions.AnnotatedResult(
-        result.target, expected_entries, result.stats)]
-    output = list(result.do(self.logic, run=self.run))
+  def runTest(self, expected_entries, result, cfg):
+    logic = annotator.Annotator(
+      config=config.Config(cfg),
+      mibresolver=self.mibresolver)
+    expected_output = expected_entries
+    output = logic.annotate(result)
     if output != expected_output:
       print('Output is not as expected!')
       print('Output:')
-      for oid, v in output[0].results.items():
+      for oid, v in output.results.items():
         print((oid, v))
       print('Expected:')
-      for oid, v in expected_output[0].results.items():
+      for oid, v in expected_output.results.items():
         print((oid, v))
     self.assertEqual(output, expected_output)
 
@@ -86,33 +73,33 @@ class TestAnnotator(unittest.TestCase):
     if not ctxt is None:
       labels = dict(labels)
       labels['vlan'] = ctxt
-    return {key: actions.AnnotatedResultEntry(
-      result.results[key], mib, obj, index, labels)}
+    return {key: annotator.AnnotatedResultEntry(
+      result[key], mib, obj, index, labels)}
 
   def newExpectedFromResult(self, result):
     # We will most likely just pass through a lot of the results, so create
     # the basic annotated entries and just operate on the edge cases we are
     # testing.
     expected = {}
-    for (key, ctxt), value in result.results.items():
+    for (key, ctxt), value in result.items():
       expected.update(self.createResultEntry((key, ctxt), result, {}))
     return expected
 
   def testSmokeTest(self):
     """Test empty config and empty SNMP result."""
-    result = self.createResult(results={})
+    result = {}
     expected = {}
     self.runTest(expected, result, '')
 
   def testResult(self):
     """Test that results are propagated as we want."""
-    result = self.createResult(results={
+    result = {
       ('.1.2.4.1', '100'): snmpResult(1337)
-    })
+    }
     # NOTE(bluecmd): Do *not* use createResultEntry here to make sure the
     # assumptions we're doing in that function are holding.
     expected = {
-      ('.1.2.4.1', '100'): actions.AnnotatedResultEntry(
+      ('.1.2.4.1', '100'): annotator.AnnotatedResultEntry(
         data=snmpResult(1337), mib='DUMMY-MIB', obj='testInteger2',
         index='1', labels={'vlan': '100'})
     }
@@ -130,7 +117,7 @@ annotator:
         alias: .10.2
         nonexistant: .10.3
 """
-    result = self.createResult({
+    result = {
       ('.1.2.3.1', None): snmpResult(1337),
       ('.1.2.3.3', None): snmpResult(1338),
       ('.1.2.4.1', None): snmpResult(1339),
@@ -142,7 +129,7 @@ annotator:
       ('.10.1.3.3', None): snmpResult('interface3'),
       ('.10.2.1', None): snmpResult('alias1'),
       ('.10.2.3.2', None): snmpResult('alias2'),
-    })
+    }
     expected = self.newExpectedFromResult(result)
     expected.update(self.createResultEntry(('.1.2.3.1', None), result,
       {'interface': 'interface1', 'alias': 'alias1'}))
@@ -167,7 +154,7 @@ annotator:
         interface: .10.1
         alias: .10.2
 """
-    result = self.createResult({
+    result = {
       ('.1.2.3.1.666', None): snmpResult(1337),
       ('.1.2.3.3.666', None): snmpResult(1338),
       ('.1.2.4.1.666', None): snmpResult(1339),
@@ -176,7 +163,7 @@ annotator:
       ('.10.1.3.2', None): snmpResult('interface2'),
       ('.10.2.1', None): snmpResult('alias1'),
       ('.10.2.3.2', None): snmpResult('alias2'),
-    })
+    }
     expected = self.newExpectedFromResult(result)
     expected.update(self.createResultEntry(('.1.2.3.1.666', None), result,
       {'interface': 'interface1', 'alias': 'alias1'}))
@@ -197,7 +184,7 @@ annotator:
         interface: .10.1
         alias: .10.2
 """
-    result = self.createResult({
+    result = {
       ('.1.2.3.1.1.666', None): snmpResult(1337),
       ('.1.2.3.1.3.666', None): snmpResult(1338),
       ('.1.2.4.1.1.666', None): snmpResult(1339),
@@ -206,7 +193,7 @@ annotator:
       ('.10.1.3.1.2', None): snmpResult('interface2'),
       ('.10.2.1.1', None): snmpResult('alias1'),
       ('.10.2.3.1.2', None): snmpResult('alias2'),
-    })
+    }
     expected = self.newExpectedFromResult(result)
     expected.update(self.createResultEntry(('.1.2.3.1.1.666', None), result,
       {'interface': 'interface1', 'alias': 'alias1'}))
@@ -226,12 +213,12 @@ annotator:
       with:
         interface: .1.2.4 > .1.2.5 > .10.1
 """
-    result = self.createResult({
+    result = {
       ('.1.2.3.1', None): snmpResult(1337),
       ('.1.2.4.1', None): snmpResult(5),
       ('.1.2.5.5', None): snmpResult(3),
       ('.10.1.3', None): snmpResult('correct'),
-    })
+    }
     expected = self.newExpectedFromResult(result)
     expected.update(self.createResultEntry(('.1.2.3.1', None), result,
       {'interface': 'correct'}))
@@ -247,12 +234,12 @@ annotator:
       with:
         interface: $.1.2.4 > .1.2.5 > .10.1
 """
-    result = self.createResult({
+    result = {
       ('.1.2.3.1337', None): snmpResult(1),
       ('.1.2.4.1', None): snmpResult(5),
       ('.1.2.5.5', None): snmpResult(3),
       ('.10.1.3', None): snmpResult('correct'),
-    })
+    }
     expected = self.newExpectedFromResult(result)
     expected.update(self.createResultEntry(('.1.2.3.1337', None), result,
       {'interface': 'correct'}))
@@ -268,12 +255,12 @@ annotator:
       with:
         interface: .1.2.4 > .1.2.5 > .10.1
 """
-    result = self.createResult({
+    result = {
       ('.1.2.3.1', '100'): snmpResult(1337),
       ('.1.2.4.1', '100'): snmpResult(5),
       ('.1.2.5.5', None): snmpResult(3),
       ('.10.1.3', None): snmpResult('correct'),
-    })
+    }
     expected = self.newExpectedFromResult(result)
     expected.update(self.createResultEntry(('.1.2.3.1', '100'), result,
       {'interface': 'correct'}))
@@ -289,12 +276,12 @@ annotator:
       with:
         interface: .1.2.4 > .1.2.5 > .10.1
 """
-    result = self.createResult({
+    result = {
       ('.1.2.3.1', '100'): snmpResult(1337),
       ('.1.2.4.1', '100'): snmpResult(6),
       ('.1.2.5.5', None): snmpResult(3),
       ('.10.1.3', None): snmpResult('dummy'),
-    })
+    }
     expected = self.newExpectedFromResult(result)
     self.runTest(expected, result, config)
 
@@ -308,12 +295,12 @@ annotator:
       with:
         interface: .1.2.4 > .1.2.6 > .10.1
 """
-    result = self.createResult({
+    result = {
       ('.1.2.3.1', '100'): snmpResult(1337),
       ('.1.2.4.1', '100'): snmpResult(5),
       ('.1.2.5.5', None): snmpResult(3),
       ('.10.1.3', None): snmpResult('dummy'),
-    })
+    }
     expected = self.newExpectedFromResult(result)
     self.runTest(expected, result, config)
 
@@ -324,16 +311,16 @@ annotator:
   labelify:
     - .10.2
 """
-    result = self.createResult({
+    result = {
       ('.10.2.1', None): snmpResult('correct'),
       ('.10.2.2', None): snmpResult('\xffabc\xff '),
       ('.10.2.3', None): snmpResult(''),
       ('.10.2.4', None): snmpResult(2),
-    })
-    identities = self.createResult({
+    }
+    identities = {
       ('.10.2.1', None): snmpResult('NaN', 'ANNOTATED'),
       ('.10.2.2', None): snmpResult('NaN', 'ANNOTATED'),
-    })
+    }
     expected = self.newExpectedFromResult(result)
     expected.update(self.createResultEntry(('.10.2.1', None), identities,
       {'value': 'correct', 'hex': binascii.hexlify('correct'.encode())}))
@@ -347,9 +334,9 @@ annotator:
 
   def testEnums(self):
     """Test conversion of enums to values."""
-    result = self.createResult({
+    result = {
       ('.10.3.1', None): snmpResult(10),
-    })
+    }
     expected = self.newExpectedFromResult(result)
     expected.update(self.createResultEntry(('.10.3.1', None), result,
       {'enum': 'enumValue'}))
@@ -357,9 +344,9 @@ annotator:
 
   def testEnumsInvalid(self):
     """Test conversion of enums to values (invalid value)."""
-    result = self.createResult({
+    result = {
       ('.10.3.1', None): snmpResult(9),
-    })
+    }
     expected = self.newExpectedFromResult(result)
     self.runTest(expected, result, '')
 
@@ -374,10 +361,10 @@ annotator:
         thing: .10.3
 """
 
-    result = self.createResult({
+    result = {
       ('.1.2.3.1', None): snmpResult(10),
       ('.10.3.1', None): snmpResult(10),
-    })
+    }
     expected = self.newExpectedFromResult(result)
     expected.update(self.createResultEntry(('.1.2.3.1', None), result,
       {'thing': 'enumValue'}))

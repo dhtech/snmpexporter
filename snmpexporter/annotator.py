@@ -2,12 +2,12 @@
 import binascii
 import collections
 import logging
-import time
 
-import actions
-import config
-import snmp
-import stage
+from snmpexporter import snmp
+
+
+AnnotatedResultEntry = collections.namedtuple('AnnotatedResultEntry',
+  ('data', 'mib', 'obj', 'index', 'labels'))
 
 
 class Annotator(object):
@@ -15,24 +15,17 @@ class Annotator(object):
 
   LABEL_TYPES = set(['OCTETSTR', 'IPADDR'])
   ALLOWED_CHARACTERS = (
-      '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
-      '!"#$%&\'()*+,-./:;<=>?@[\\]^_`{|}~ ')
+    '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
+    '!"#$%&\'()*+,-./:;<=>?@[\\]^_`{|}~ ')
 
-  def __init__(self):
+  def __init__(self, config, mibresolver):
     super(Annotator, self).__init__()
+    self.config = config
     self.mibcache = {}
-    self._mibresolver = None
+    self.mibresolver = mibresolver
 
-  @property
-  def mibresolver(self):
-    # Do the import here to not spam the terminal with netsnmp stuff
-    if self._mibresolver is None:
-      import mibresolver
-      self._mibresolver = mibresolver
-    return self._mibresolver
-
-  def do_result(self, run, target, results, stats):
-    annotations = config.get('annotator', 'annotations') or []
+  def annotate(self, results):
+    annotations = self.config.get('annotator', 'annotations') or []
 
     # Calculate map to skip annotation if we're sure we're not going to annotate
     # TODO(bluecmd): This could be cached
@@ -50,7 +43,7 @@ class Annotator(object):
         annotation_map[(annotate + '.', offset)] = annotation['with']
 
     labelification = set(
-        [x + '.' for x in config.get('annotator', 'labelify') or []])
+      [x + '.' for x in self.config.get('annotator', 'labelify') or []])
 
     # Pre-fill the OID/Enum cache to allow annotations to get enum values
     for (oid, ctxt), result in results.items():
@@ -80,8 +73,6 @@ class Annotator(object):
       if resolve is None:
         continue
 
-      # Record some stats on how long time it took to get this metric
-      elapsed = (time.time() - target.timestamp) * 1000 * 1000
       labels = {}
       vlan = None
 
@@ -102,8 +93,8 @@ class Annotator(object):
       if not vlan is None:
         labels['vlan'] = vlan
       labels.update(
-          self.annotate(
-            oid, index, ctxt, annotation_map, split_oid_map, results))
+        self.annotated_join(
+          oid, index, ctxt, annotation_map, split_oid_map, results))
 
       # Handle labelification
       if oid[:-len(index)] in labelification:
@@ -119,18 +110,18 @@ class Annotator(object):
         enum_value = enum.get(result.value, None)
         if enum_value is None:
           logging.warning('Got invalid enum value for %s (%s), not labling',
-              oid, result.value)
+            oid, result.value)
         else:
           labels['enum'] = enum_value
 
-      annotated_results[(oid, vlan)] = actions.AnnotatedResultEntry(
-          result, mib, obj, index, labels)
+      annotated_results[(oid, vlan)] = AnnotatedResultEntry(
+        result, mib, obj, index, labels)
 
-    yield actions.AnnotatedResult(target, annotated_results, stats)
-    logging.debug('Annotation completed for %d metrics for %s',
-        len(annotated_results), target.host)
+    logging.debug('Annotation completed for %d metrics', len(annotated_results))
+    return annotated_results
 
-  def annotate(self, oid, index, ctxt, annotation_map, split_oid_map, results):
+  def annotated_join(self, oid, index, ctxt, annotation_map, split_oid_map,
+                     results):
     for key, offset in annotation_map:
       if oid.startswith(key):
         break
@@ -146,7 +137,7 @@ class Annotator(object):
       annotation_keys = [x.strip() + '.' for x in annotation_path.split('>')]
 
       value = self.jump_to_value(
-          annotation_keys, oid, ctxt, index, split_oid_map, results)
+        annotation_keys, oid, ctxt, index, split_oid_map, results)
       if value is None:
         continue
 
@@ -197,7 +188,7 @@ class Annotator(object):
       enum_value = enum.get(value, None)
       if enum_value is None:
         logging.warning('Got invalid enum value for %s (%s), ignoring',
-            oid, value)
+          oid, value)
         return None
       value = enum_value
     return value
@@ -205,9 +196,3 @@ class Annotator(object):
   def string_to_label_value(self, value):
     value = ''.join(x for x in value.strip() if x in self.ALLOWED_CHARACTERS)
     return value.strip()
-
-
-if __name__ == '__main__':
-  annotator = stage.Stage(Annotator())
-  annotator.listen(actions.Result)
-  annotator.run()
