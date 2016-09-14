@@ -1,0 +1,246 @@
+snmp:
+  services:
+    auth: my_sha
+    auth_proto: SHA
+    port: 161
+    priv: my_aes
+    priv_proto: AES
+    sec_level: authPriv
+    user: my_user
+    version: 3
+  wifi:
+    community: public
+    version: 2
+
+override:
+  # bsnDot11EssNumberOfMobileStations is reported as a Counter
+  .1.3.6.1.4.1.14179.2.1.1.1.38: INTEGER
+
+annotator:
+
+  # Labelification is used to turn strings into labels on metrics that
+  # otherwise do not have any numeric data. The value will be fixed to 1
+  # and the string value will be moved to a label called 'value' and 'hex'.
+  # Use this if you don't have any sensible OID to annotate with the value or
+  # there isn't a 1:1 match between the index and the value you wish to use.
+  #
+  # 'value' contains the human readable characters only and is striped.
+  # 'hex' is the raw data but hex encoded.
+  # If the raw string value is empty the result is dropped
+  labelify:
+    - .1.3.6.1.2.1.47.1.1.1.1.9  # entPhysicalFirmwareRev
+    - .1.3.6.1.2.1.47.1.1.1.1.11 # entPhysicalSerialNum
+    - .1.3.6.1.2.1.47.1.1.1.1.13 # entPhysicalModelName
+    - .1.3.6.1.4.1.9.9.380.1.1.8 # cdsRelayAgentInfoOptRemoteIdSub
+    - .1.3.6.1.4.1.232.22.2.4.1.1.1.4  # cpqRackServerBladeName
+    - .1.3.6.1.4.1.232.22.2.4.1.1.1.16 # cpqRackServerBladeSerialNum
+    - .1.3.6.1.4.1.232.22.2.4.1.1.1.17 # cpqRackServerBladeProductId
+    - .1.3.6.1.4.1.232.22.2.4.1.1.1.27 # cpqRackServerBladeSystemBIOSRevision
+    - .1.3.6.1.4.1.232.22.2.4.1.1.1.30 # cpqRackServerBladeManagementDeviceFirmwareRevision
+
+  annotations:
+    - annotate:
+        - .1.3.6.1.2.1.2.2.1                 # ifTable
+        - .1.3.6.1.2.1.31.1.1                # ifXEntry
+        - .1.3.6.1.4.1.9.9.46.1.6.1.1        # vlanTrunkPortEntry
+        # TODO(bluecmd): Requires special index slicing:
+        # https://github.com/dhtech/dhmon/issues/23
+        - .1.3.6.1.4.1.9.9.87.1.4.1.1.32     # c2900PortDuplexStatus
+        # Note that cErrDisableIfStatusCause uses "ifIndex.0" as index, so we
+        # need to use [1] to annotate against ifTable
+        - .1.3.6.1.4.1.9.9.548.1.3.1.1.2[1]  # cErrDisableIfStatusCause
+      with:
+        interface: .1.3.6.1.2.1.2.2.1.2  # ifDescr
+        alias: .1.3.6.1.2.1.31.1.1.1.18  # ifAlias
+
+    - annotate:
+        - .1.3.6.1.2.1.17.4.3.1.2     # dot1dTpFdbStatus (mac -> port)
+        - .1.3.6.1.2.1.17.2.15.1.3    # dot1dStpPortState
+      with:
+        # These OIDs use the port so we need to map the port to ifIndex first
+        # through .1.3.6.1.2.1.17.1.4.1.2
+        interface: .1.3.6.1.2.1.17.1.4.1.2 > .1.3.6.1.2.1.2.2.1.2  # ifDescr
+        alias: .1.3.6.1.2.1.17.1.4.1.2 > .1.3.6.1.2.1.31.1.1.1.18  # ifAlias
+
+    - annotate:
+        - .1.3.6.1.4.1.9.9.91.1.1.1.1.4    # entSensorValue
+      with:
+        sensor: .1.3.6.1.2.1.47.1.1.1.1.2   # entPhysicalDesc
+        type: .1.3.6.1.4.1.9.9.91.1.1.1.1.1 # entSensorType
+        # TODO(bluecmd): This might be better to map to a proper
+        # scale so that we can do entSensorValue / entSensorScale
+        # TOOD(bluecmd): We want to do OID value resolution for
+        # these kind of oids. Right now we save e.g "7", while we
+        # should save "millis".
+        scale: .1.3.6.1.4.1.9.9.91.1.1.1.1.2 # entSensorScale
+
+    - annotate:
+        - .1.3.6.1.2.1.47.1.1.1.1.11    # entPhysicalSerialNum
+      with:
+        inside: .1.3.6.1.2.1.47.1.1.1.1.4 # entPhysicalContainedIn
+        name: .1.3.6.1.2.1.47.1.1.1.1.2   # entPhysicalDesc
+
+    - annotate:
+        - .1.3.6.1.4.1.14179.2.1.1.1.38      # bsnDot11EssNumberOfMobileStation
+      with:
+        essid: .1.3.6.1.4.1.14179.2.1.1.1.2  # bsnDot11EssSsid
+
+    - annotate:
+        - .1.3.6.1.4.1.9.9.548.1.3.1.1.2      # cErrDisableIfStatusCause
+      with:
+        vlan: .1.3.6.1.4.1.9.9.548.1.3.1.1.1  # cErrDisableIfStatusVlanIndex
+
+    - annotate:
+        - .1.3.6.1.4.1.9.9.513.1.1.1         # cLApTable
+        - .1.3.6.1.4.1.9.9.513.1.2.2         # cLApEthernetIfTable
+      with:
+        ap: .1.3.6.1.4.1.9.9.513.1.1.1.1.5   # cLApName
+
+    - annotate:
+        - .1.3.6.1.4.1.14179.2.2.1        # bsnAPTable
+        - .1.3.6.1.4.1.14179.2.2.2[1]     # bsnAPIfTable
+      with:
+        ap: .1.3.6.1.4.1.14179.2.2.1.1.3  # bsnAPName
+
+    - annotate:
+        - .1.3.6.1.4.1.232.22.2.4.1.1 # cpqRackServerBladeTable
+      with:
+        name: .1.3.6.1.4.1.232.22.2.4.1.1.1.4  # cpqRackServerBladeName
+        serial: .1.3.6.1.4.1.232.22.2.4.1.1.1.16 # cpqRackServerBladeSerialNum
+
+    - annotate:
+        - .1.3.6.1.4.1.12356.101.13.2 # fgHaTables
+      with:
+        serial: .1.3.6.1.4.1.12356.101.13.2.1.1.2  # fgHaStatsSerial
+        name: .1.3.6.1.4.1.12356.101.13.2.1.1.11   # fgHaStatsHostname
+        master: .1.3.6.1.4.1.12356.101.13.2.1.1.16 # fgHaStatsMasterSerial
+
+    - annotate:
+        - .1.3.6.1.4.1.12356.101.4.3.2.1.3 # fgHwSensorEntValue
+        - .1.3.6.1.4.1.12356.101.4.3.2.1.4 # fgHwSensorEntAlarmStatus
+      with:
+        name: .1.3.6.1.4.1.12356.101.4.3.2.1.2  # fgHwSensorEntName
+
+collection:
+  Default OIDs:
+    models:
+      - .*
+    oids:
+      - .1.3.6.1.2.1.1.3            # sysUptime
+      - .1.3.6.1.2.1.47.1.1.1.1.13  # entPhysicalModelName
+
+  Cisco Switch:
+    models:
+      - ^WS-C
+      - ^N.K-
+      - ^AIR-CT.*
+      - .*ASR9K.*
+    oids:
+      - .1.3.6.1.2.1.2.2.1.2        # ifDescr
+      - .1.3.6.1.2.1.2.2.1.7        # ifAdminStatus
+      - .1.3.6.1.2.1.2.2.1.8        # ifOperStatus
+      - .1.3.6.1.2.1.2.2.1.14       # ifInErrors
+      - .1.3.6.1.2.1.2.2.1.20       # ifOutErrors
+      - .1.3.6.1.2.1.31.1.1.1.6     # ifHCInOctets
+      - .1.3.6.1.2.1.31.1.1.1.10    # ifHCOutOctets
+      - .1.3.6.1.2.1.31.1.1.1.15    # ifHighSpeed
+      - .1.3.6.1.2.1.31.1.1.1.18    # ifAlias
+      - .1.3.6.1.2.1.47.1.1.1.1.9   # entPhysicalFirmwareRev
+      - .1.3.6.1.4.1.9.2.1          # lcpu
+      - .1.3.6.1.4.1.9.9.46.1.3.1.1.2  # vtpVlanState
+      - .1.3.6.1.4.1.9.9.46.1.6.1.1.14  # vlanTrunkPortDynamicStatus
+      - .1.3.6.1.4.1.9.9.87.1.4.1.1.32 # c2900PortDuplexStatus
+      - .1.3.6.1.4.1.9.9.109.1.1.1.1  # cisco CPU
+
+  Cisco Dist Switch:
+    models:
+      - ^WS-C
+      - ^N.K-
+      - .*ASR9K.*
+    layers:
+      - dist
+      - core
+    oids:
+      - .1.3.6.1.2.1.2.2              # ifTable
+      - .1.3.6.1.2.1.31.1.1           # ifXEntry
+    # Warning: these are expensive on ASR, do not add new ones without
+    # thinking it throgh and watching the collection latency
+      - .1.3.6.1.2.1.47.1.1.1.1.11    # entPhysicalSerialNum
+      - .1.3.6.1.2.1.47.1.1.1.1.13    # entPhysicalModelName
+      - .1.3.6.1.2.1.47.1.1.1.1.2     # entPhysicalDesc
+      - .1.3.6.1.2.1.47.1.1.1.1.4     # entPhysicalContainedIn
+      - .1.3.6.1.2.1.47.1.1.1.1.9     # entPhysicalFirmwareRev
+      - .1.3.6.1.4.1.9.2.1            # lcpu
+      - .1.3.6.1.4.1.9.9.23           # ciscoCdpMIB
+    # Warning: these are expensive on ASR, do not add new ones without
+    # thinking it throgh and watching the collection latency
+      - .1.3.6.1.4.1.9.9.91.1.1.1.1.1 # entSensorType
+      - .1.3.6.1.4.1.9.9.91.1.1.1.1.2 # entSensorScale
+      - .1.3.6.1.4.1.9.9.91.1.1.1.1.4 # entSensorValue
+      - .1.3.6.1.4.1.9.9.380.1.1      # cdsGlobal
+      - .1.3.6.1.4.1.9.9.548.1.3.1    # cErrDisableIfStatusTable
+
+  Cisco WLC:
+    models:
+      - ^AIR-CT.*
+    layers:
+      - wifi
+    oids:
+      - .1.3.6.1.2.1.31.1.1            # ifXEntry
+      - .1.3.6.1.2.1.47.1.1.1.1        # Inventory (Versions, Assets, Transceivers)
+      - .1.3.6.1.4.1.14179.2.1.1.1.2   # bsnDot11EssSsid
+      - .1.3.6.1.4.1.14179.2.1.1.1.38  # bsnDot11EssNumberOfMobileStations
+      - .1.3.6.1.4.1.14179.2.2.1       # bsnAPTable
+      - .1.3.6.1.4.1.14179.2.2.2       # bsnAPIfTable
+      - .1.3.6.1.4.1.9.9.23            # ciscoCdpMIB
+      - .1.3.6.1.4.1.9.9.513.1.1.1     # cLApTable
+      - .1.3.6.1.4.1.9.9.513.1.2.2     # cLApEthernetIfTable
+      - .1.3.6.1.4.1.9.9.523.1.5.1.0   # ciscoLwappClRoamMIBObjects
+
+  Cisco Switch - VLAN aware:
+    # DANGER! This collection type (vlan_aware) takes a looong time on switches
+    # with a lot of VLANs. Please be careful and monitor SNMP collection latency
+    vlan_aware: yes
+    layers:
+      - access
+    models:
+      - ^WS-C
+    oids:
+      - .1.3.6.1.2.1.17.1.4.1.2     # dot1dBasePortIfIndex (port -> ifindex)
+      - .1.3.6.1.2.1.17.2.15.1.3    # dot1dStpPortState
+
+  FortiGate:
+    layers:
+      - firewall
+    models:
+      - ^FGT
+    options:
+      # Some kind of UDP fragmentation issue with the Fortigates maybe.
+      # Using the default 256 causes SNMP to lock up on the device for a
+      # while.
+      max-size: 1
+    oids:
+      - .1.3.6.1.4.1.12356.101.4   # fgSystem
+      - .1.3.6.1.4.1.12356.101.13  # fgHighAvailability
+
+  HP Onboard Administrator:
+    layers:
+      - services
+    models:
+      - ^HP Onboard Administrator
+    oids:
+      - .1.3.6.1.4.1.232.22 # cpqRackInfo
+
+  ASR9K:
+    models:
+      - .*ASR9K.*
+    layers:
+      - core
+    oids:
+      - .1.3.6.1.4.1.9.9.176         # ciscoRFMIB
+
+  Juniper Switch:
+    models:
+      - ^710-.*
+    oids:
+      - .1.3.6.1.2.1 # RFC1213-MIB
