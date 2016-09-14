@@ -1,44 +1,38 @@
-[![Build Status](https://travis-ci.org/dhtech/dhmon.svg?branch=master)](https://travis-ci.org/dhtech/dhmon)
-[![Coverage Status](https://coveralls.io/repos/dhtech/dhmon/badge.svg?branch=master)](https://coveralls.io/r/dhtech/dhmon)
+[![Build Status](https://travis-ci.org/dhtech/snmpexporter.svg?branch=master)](https://travis-ci.org/dhtech/snmpexporter)
+[![Coverage Status](https://coveralls.io/repos/dhtech/snmpexporter/badge.svg?branch=master)](https://coveralls.io/r/dhtech/snmpexporter)
 
-dhmon
+snmpexporter
 =====
 
-Awesome monitoring system for DreamHack
+SNMP Poller written for DreamHack.
 
-See the Wiki https://github.com/dhtech/dhmon/wiki for latest scratch notes.
+This product was previously called snmpcollector when it was part of the bigger
+monitoring system called "dhmon". It is nowadays fully standalone and should
+not have very few if any ties back to DreamHack.
 
-## Products
+## What it is
 
-dhmon consists of a number of smaller products:
+snmpexporter is a software that given a host that speaks SNMP will try to poll
+it and mangle the data into something more suitable as metrics.
 
- - **snmpcollector** The SNMP collection daemons
- - **pinger** RTT statistics collector
- - **analytics** API backend to access processed statistics
+The core feature of the snmpexporter is its annotation feature where it can
+join different SNMP OIDs together to create something better than what SNMP
+already has today. It also supports MIBs.
+
+## Why snmpexporter
+
+Compared to the official Prometheus SNMP exporter, this exporter is more
+flexible as it knows how to read MIBs. That's basically it. It has some
+minor annotation features that might be useful, but nothing extraordinary.
 
 ## Installation
 
 Install the Debian packages for the products you want.
 
+CentOS packages are TODO.
+
 ## Building Debian packages
-
-You need to have `setuptools` for pypy installed
-
-    wget https://bootstrap.pypa.io/ez_setup.py -O - | sudo pypy
 
 Build the packages
 
     make deb
-
-or if you prefer the longer way:
-
-    # Create a new snapshot version
-    gbp dch --snapshot --auto
-    
-    # Clean
-    rm ../dhmon_*.orig.tar.gz
-    
-    # Build
-    gbp buildpackage --git-upstream-tree=master --git-submodules \
-        --git-ignore-new --git-builder='debuild -i -I -k28B92277'
-

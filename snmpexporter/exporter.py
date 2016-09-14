@@ -1,6 +1,6 @@
 #!/usr/bin/env pypy
-import BaseHTTPServer
-import SocketServer
+import http.server
+import socketserver
 import base64
 import logging
 import prometheus_client
@@ -95,7 +95,7 @@ class Exporter(object):
       SUMMARIES_COUNT.set(len(self.summaries))
 
   def _save(self, target, results):
-    for result in results.itervalues():
+    for result in results.values():
       self.export(target, result)
 
   def export(self, target, result):
@@ -121,7 +121,7 @@ class Exporter(object):
           result.data.value, target.timestamp, result.labels)
 
   def is_only_numeric(self, labels_map):
-    for (value, _, _) in labels_map.itervalues():
+    for (value, _, _) in labels_map.values():
       try:
         float(value)
       except ValueError:
@@ -133,12 +133,12 @@ class Exporter(object):
       # Since the label map will be mutated we need to do a deep copy here.
       with self.copy_lock:
         metrics_copy = {}
-        for obj, (mib, type, labels) in self.metrics.iteritems():
+        for obj, (mib, type, labels) in self.metrics.items():
           metrics_copy[obj] = (mib, type, dict(labels))
 
       # Assemble the output
       out = []
-      for obj, (mib, metrics_type, labels_map) in metrics_copy.iteritems():
+      for obj, (mib, metrics_type, labels_map) in metrics_copy.items():
         # Some vendors (e.g. Fortigate) choose to have decimal values as
         # OCTETSTR instead of a scaled value. Try to convert all values, if
         # we succeed export this metric as guage.
@@ -151,7 +151,7 @@ class Exporter(object):
         out.append('# HELP {0} {1}::{0}\n'.format(obj, mib))
         out.append('# TYPE {0} {1}\n'.format(obj, metrics_type))
         for (host, layer, index, type), (value, timestamp, add_labels) in (
-            labels_map.iteritems()):
+            iter(labels_map.items())):
 
           labels = dict(add_labels)
           labels['device'] = host
@@ -161,7 +161,7 @@ class Exporter(object):
           # without any real benefit.
           # labels['type'] = type
 
-          label_list = ['{0}="{1}"'.format(k, v) for k, v in labels.iteritems()]
+          label_list = ['{0}="{1}"'.format(k, v) for k, v in labels.items()]
           label_string = ','.join(label_list)
           instance = ''.join([obj, '{', label_string, '}'])
 
@@ -185,7 +185,7 @@ if __name__ == '__main__':
   # work in daemon mode, which is odd. I need to debug this more.
   # For now, run the exporter like 'python src/exporter.py -d'
 
-  class MetricsHandler(BaseHTTPServer.BaseHTTPRequestHandler):
+  class MetricsHandler(http.server.BaseHTTPRequestHandler):
     def do_GET(self):
       self.send_response(200)
       self.send_header(
@@ -198,7 +198,7 @@ if __name__ == '__main__':
 
 
   class ThreadedHTTPServer(
-      SocketServer.ThreadingMixIn, BaseHTTPServer.HTTPServer):
+      socketserver.ThreadingMixIn, http.server.HTTPServer):
     pass
 
   class PrometheusMetricsServer(threading.Thread):

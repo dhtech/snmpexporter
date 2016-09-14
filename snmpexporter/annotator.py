@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python3
 import binascii
 import collections
 import logging
@@ -53,7 +53,7 @@ class Annotator(object):
         [x + '.' for x in config.get('annotator', 'labelify') or []])
 
     # Pre-fill the OID/Enum cache to allow annotations to get enum values
-    for (oid, ctxt), result in results.iteritems():
+    for (oid, ctxt), result in results.items():
       resolve = self.mibcache.get(oid, None)
       if resolve is None:
         resolve = self.mibresolver.resolve(oid)
@@ -64,7 +64,7 @@ class Annotator(object):
 
     # Calculate annotator map
     split_oid_map = collections.defaultdict(dict)
-    for (oid, ctxt), result in results.iteritems():
+    for (oid, ctxt), result in results.items():
       resolve = self.mibcache.get(oid, None)
       if resolve is None:
         continue
@@ -75,7 +75,7 @@ class Annotator(object):
       split_oid_map[(key, ctxt)][index] = result.value
 
     annotated_results = {}
-    for (oid, ctxt), result in results.iteritems():
+    for (oid, ctxt), result in results.items():
       resolve = self.mibcache.get(oid, None)
       if resolve is None:
         continue
@@ -111,7 +111,7 @@ class Annotator(object):
         if result.value == '' or result.type not in self.LABEL_TYPES:
           continue
         labels['value'] = self.string_to_label_value(result.value)
-        labels['hex'] = binascii.hexlify(result.value)
+        labels['hex'] = binascii.hexlify(result.value.encode())
         result = snmp.ResultTuple('NaN', 'ANNOTATED')
 
       # Do something almost like labelification for enums
@@ -141,7 +141,7 @@ class Annotator(object):
       index_parts = index.split('.')
       index = '.'.join(index_parts[:-offset])
     labels = {}
-    for label, annotation_path in annotation_map[(key, offset)].iteritems():
+    for label, annotation_path in annotation_map[(key, offset)].items():
       # Parse the annotation path
       annotation_keys = [x.strip() + '.' for x in annotation_path.split('>')]
 

@@ -68,25 +68,25 @@ logging.info('Target model: %s', model)
 logging.info('Target VLANs: %s', target.vlans())
 
 if args.oid:
-  for i in target.walk(args.oid).iteritems():
-    print i
+  for i in target.walk(args.oid).items():
+    print(i)
 else:
   for action in worker_stage.do_snmp_walk(actions.RunInformation(), target):
     for (oid, ctxt) in sorted(action.results.keys()):
       enum = {}
       if args.numeric:
-        print oid,
+        print(oid, end=' ')
       else:
         obj, enum = mibresolver.resolve(oid)
-        print obj,
+        print(obj, end=' ')
       if ctxt:
-        print '(%s)' % ctxt,
-      print action.results[(oid, ctxt)],
+        print('(%s)' % ctxt, end=' ')
+      print(action.results[(oid, ctxt)], end=' ')
       if enum:
-        print 'value translates to "%s"' % (
+        print('value translates to "%s"' % (
             enum.get(action.results[(oid, ctxt)].value,
-                     '<INVALID ENUM VALUE>')),
-      print
+                     '<INVALID ENUM VALUE>')), end=' ')
+      print()
     logging.info('Run stats: %s', action.stats)
 
 logging.info('Duration: %s', time.time() - start)

@@ -70,14 +70,14 @@ class TestAnnotator(unittest.TestCase):
         result.target, expected_entries, result.stats)]
     output = list(result.do(self.logic, run=self.run))
     if output != expected_output:
-      print 'Output is not as expected!'
-      print 'Output:'
-      for oid, v in output[0].results.iteritems():
-        print oid, v
-      print 'Expected:'
-      for oid, v in expected_output[0].results.iteritems():
-        print oid, v
-    self.assertEquals(output, expected_output)
+      print('Output is not as expected!')
+      print('Output:')
+      for oid, v in output[0].results.items():
+        print((oid, v))
+      print('Expected:')
+      for oid, v in expected_output[0].results.items():
+        print((oid, v))
+    self.assertEqual(output, expected_output)
 
   def createResultEntry(self, key, result, labels):
     # mib/objs etc. is tested in testResult so we can assume they are correct
@@ -94,7 +94,7 @@ class TestAnnotator(unittest.TestCase):
     # the basic annotated entries and just operate on the edge cases we are
     # testing.
     expected = {}
-    for (key, ctxt), value in result.results.iteritems():
+    for (key, ctxt), value in result.results.items():
       expected.update(self.createResultEntry((key, ctxt), result, {}))
     return expected
 
@@ -336,9 +336,9 @@ annotator:
     })
     expected = self.newExpectedFromResult(result)
     expected.update(self.createResultEntry(('.10.2.1', None), identities,
-      {'value': 'correct', 'hex': binascii.hexlify('correct')}))
+      {'value': 'correct', 'hex': binascii.hexlify('correct'.encode())}))
     expected.update(self.createResultEntry(('.10.2.2', None), identities,
-      {'value': 'abc', 'hex': binascii.hexlify('\xffabc\xff ')}))
+      {'value': 'abc', 'hex': binascii.hexlify('\xffabc\xff '.encode())}))
     # Empty strings should not be included
     del expected[('.10.2.3', None)]
     # Only strings are labelified

@@ -1,9 +1,9 @@
 import argparse
+    # TODO(bluecmd): Remove
 import logging
 import logging.handlers
 import os
 import pickle
-import pika
 import sys
 import time
 
@@ -55,20 +55,14 @@ class Stage(object):
       root.setLevel(logging.DEBUG)
       ch = logging.StreamHandler(sys.stdout)
       ch.setLevel(logging.DEBUG)
-      logging.getLogger('pika').setLevel(logging.ERROR)
-
       formatter = logging.Formatter( '%(asctime)s - %(name)s - '
           '%(levelname)s - %(message)s' )
       ch.setFormatter(formatter)
       root.addHandler(ch)
 
   def startup(self):
+    # TODO(bluecmd): Remove
     assert not self.started
-    mq = config.get('mq')
-    credentials = pika.PlainCredentials(mq['username'], mq['password'])
-    self.connection = pika.BlockingConnection(
-        pika.ConnectionParameters(mq['host'], credentials=credentials))
-    self.result_channel = self.connection.channel()
     logging.info('Started %s', self.name)
     self.started = True
 
@@ -78,12 +72,8 @@ class Stage(object):
     self.connection.close()
 
   def push(self, action, run, expire=None):
-    properties = pika.BasicProperties(
-        expiration=str(expire) if expire else None)
-    self.result_channel.basic_publish(
-        exchange='', routing_key=action.get_queue(self.args.instance),
-        body=pickle.dumps((action, run), protocol=pickle.HIGHEST_PROTOCOL),
-        properties=properties)
+    # TODO(bluecmd): Remove
+    pass
 
   def listen(self, action_cls):
     self.listen_to.add(action_cls)
@@ -91,7 +81,7 @@ class Stage(object):
   def _task_wrapper_callback(self, channel, method, properties, body):
     try:
       self._task_callback(channel, method, properties, body)
-    except Exception, e:
+    except Exception:
       logging.exception('Unhandled exception in task loop:')
     finally:
       # Ack now, if we die during sending we will hopefully not crash loop
@@ -157,10 +147,10 @@ class Stage(object):
       self.task_channel.start_consuming()
     except KeyboardInterrupt:
       logging.error('Keyboard interrupt, shutting down..')
-    except Exception, e:
+    except Exception:
       logging.exception('Unhandled exception, restarting stage')
 
     try:
       self.shutdown()
-    except Exception, e:
+    except Exception:
       logging.exception('Exception in shutdown')

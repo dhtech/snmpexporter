@@ -161,16 +161,16 @@ class SnmpTarget(object):
       model = self.get(oid)
       if not model:
         continue
-      value = model.values().pop().value
+      value = list(model.values()).pop().value
       if value:
         return value
     raise NoModelOid('No model OID contained a model')
 
   def vlans(self):
     try:
-      oids = self.walk('.1.3.6.1.4.1.9.9.46.1.3.1.1.2').keys()
+      oids = list(self.walk('.1.3.6.1.4.1.9.9.46.1.3.1.1.2').keys())
       vlans = {int(x.split('.')[-1]) for x in oids}
       return vlans
-    except ValueError, e:
+    except ValueError as e:
       logging.info('ValueError while parsing VLAN for %s: %s', self.host, e)
       return []

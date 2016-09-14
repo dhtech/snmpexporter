@@ -5,6 +5,5 @@ data_file = .coverage
 parallel = True
 omit = *_test.*
 source =
-  src/snmpcollector/src
-  src/pinger
-  src/analytics
+  snmpexporter
+  .

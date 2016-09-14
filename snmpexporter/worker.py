@@ -33,15 +33,15 @@ def _poll(data):
       continue
     try:
       results.update(
-          {(k, vlan): v for k, v in target.walk(oid, vlan).iteritems()})
-    except snmp.TimeoutError, e:
+          {(k, vlan): v for k, v in target.walk(oid, vlan).items()})
+    except snmp.TimeoutError as e:
       timeouts += 1
       if vlan:
         logging.debug(
             'Timeout, is switch configured for VLAN SNMP context? %s', e)
       else:
         logging.debug('Timeout, slow switch? %s', e)
-    except snmp.Error, e:
+    except snmp.Error as e:
       errors += 1
       logging.warning('SNMP error for OID %s@%s: %s', oid, vlan, str(e))
   return results, errors, timeouts
@@ -66,7 +66,7 @@ class Worker(object):
 
     oids = set()
     vlan_aware_oids = set()
-    for collection_name, collection in config.get('collection').iteritems():
+    for collection_name, collection in config.get('collection').items():
       for regexp in collection['models']:
         layers = collection.get('layers', None)
         if layers and target.layer not in layers:
@@ -92,7 +92,7 @@ class Worker(object):
     overridden_oids = set(overrides.keys())
 
     overriden_results = results
-    for oid, result in results.iteritems():
+    for oid, result in results.items():
       root = '.'.join(oid.split('.')[:-1])
       if root in overridden_oids:
         overriden_results[oid] = snmp.ResultTuple(
@@ -103,16 +103,16 @@ class Worker(object):
     results, errors, timeouts = self._walk(target)
     results = results if results else {}
     logging.debug('Done SNMP poll (%d objects) for "%s"',
-        len(results.keys()), target.host)
+        len(list(results.keys())), target.host)
     yield actions.Result(target, results, actions.Statistics(timeouts, errors))
 
   def _walk(self, target):
     try:
       model = target.model()
-    except snmp.TimeoutError, e:
+    except snmp.TimeoutError as e:
       logging.exception('Could not determine model of %s:', target.host)
       return None, 0, 1
-    except snmp.Error, e:
+    except snmp.Error as e:
       logging.exception('Could not determine model of %s:', target.host)
       return None, 1, 0
     if not model:
@@ -130,7 +130,7 @@ class Worker(object):
     try:
       if vlan_oids:
         vlans.update(target.vlans())
-    except snmp.Error, e:
+    except snmp.Error as e:
       errors += 1
       logging.warning('Could not list VLANs: %s', str(e))
 
