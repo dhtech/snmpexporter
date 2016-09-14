@@ -1,5 +1,5 @@
 [![Build Status](https://travis-ci.org/dhtech/snmpexporter.svg?branch=master)](https://travis-ci.org/dhtech/snmpexporter)
-[![Coverage Status](https://coveralls.io/repos/dhtech/snmpexporter/badge.svg?branch=master)](https://coveralls.io/r/dhtech/snmpexporter)
+[![Coverage Status](https://coveralls.io/repos/github/dhtech/snmpexporter/badge.svg?branch=master)](https://coveralls.io/github/dhtech/snmpexporter?branch=master)
 
 snmpexporter
 =====
