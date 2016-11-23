@@ -14,6 +14,10 @@
 #define MAX_OUTPUT 1024
 
 
+struct module_state {
+      PyObject *error;
+};
+
 static PyObject *resolve(PyObject *self, PyObject *args) {
   oid name[MAX_OID_LEN];
   size_t name_length = MAX_OID_LEN;
@@ -39,8 +43,8 @@ static PyObject *resolve(PyObject *self, PyObject *args) {
   if (tp->enums) {
     struct enum_list *ep = tp->enums;
     while (ep) {
-      PyDict_SetItem(enum_map, PyString_FromFormat("%d", ep->value),
-          PyString_FromString(ep->label));
+      PyDict_SetItem(enum_map, PyUnicode_FromFormat("%d", ep->value),
+          PyUnicode_FromString(ep->label));
       ep = ep->next;
     }
   }
@@ -48,14 +52,46 @@ static PyObject *resolve(PyObject *self, PyObject *args) {
   return Py_BuildValue("sO", output, enum_map);
 }
 
+static int module_traverse(PyObject *m, visitproc visit, void *arg) {
+  Py_VISIT(((struct module_state*)PyModule_GetState(m))->error);
+  return 0;
+}
+
+static int module_clear(PyObject *m) {
+  Py_CLEAR(((struct module_state*)PyModule_GetState(m))->error);
+  return 0;
+}
+
 static PyMethodDef module_funcs[] = {
   { "resolve", resolve, METH_VARARGS, "Try to resolve a given OID." },
   { NULL, NULL, 0, NULL }
 };
 
+static struct PyModuleDef moduledef = {
+  PyModuleDef_HEAD_INIT,
+  "mibresolver",
+  "MIB resolver utilities",
+  sizeof(struct module_state),
+  module_funcs,
+  NULL,
+  module_traverse,
+  module_clear,
+  NULL
+};
 
-void initmibresolver(void) {
-  Py_InitModule3("mibresolver", module_funcs, "MIB resolver utilities");
+PyMODINIT_FUNC PyInit_mibresolver(void) {
+  PyObject *module = PyModule_Create(&moduledef);
+
+  if (module == NULL)
+    return NULL;
+
+  struct module_state *st = (struct module_state*)PyModule_GetState(module);
+
+  st->error = PyErr_NewException("mibresolver.Error", NULL, NULL);
+  if (st->error == NULL) {
+    Py_DECREF(module);
+    return NULL;
+  }
 
   /* Turn off noisy MIB debug logging */
   netsnmp_register_loghandler(NETSNMP_LOGHANDLER_NONE, 0);
@@ -65,4 +101,5 @@ void initmibresolver(void) {
       NETSNMP_DS_LIBRARY_ID, NETSNMP_DS_LIB_DONT_BREAKDOWN_OIDS, 1);
 
   init_snmp("snmpapp");
+  return module;
 }
