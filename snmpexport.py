@@ -5,6 +5,8 @@ import sys
 import yaml
 
 import snmpexporter
+import snmpexporter.prometheus
+
 
 def main(config_file, host, layer, annotate=True):
   with open(config_file, 'r') as f:
@@ -22,12 +24,28 @@ def main(config_file, host, layer, annotate=True):
   logging.debug('Initializing Net-SNMP implemention')
   snmpimpl = snmpexporter.snmpimpl.NetsnmpImpl()
 
-  results = snmpexporter.probe(
-    host, layer, collections, overrides, snmp_creds, annotator_config,
-    resolver, snmpimpl, annotate)
+  logging.debug('Constructing SNMP target')
+  target = snmpexporter.target.SnmpTarget(host, layer, snmp_creds)
 
-  for (oid, vlan), value in sorted(results.items()):
-    print(str(vlan if vlan else '').ljust(5), oid.ljust(50), value)
+  logging.debug('Creating SNMP poller')
+  poller = snmpexporter.poller.Poller(collections, overrides, snmpimpl)
+
+  logging.debug('Starting poll')
+  data, timeouts, errors = poller.poll(target)
+
+  if not annotate:
+    for (oid, vlan), value in sorted(data.items()):
+      print(str(vlan if vlan else '').ljust(5), oid.ljust(50), value)
+    return
+
+  logging.debug('Creating result annotator')
+  annotator = snmpexporter.annotator.Annotator(annotator_config, resolver)
+
+  logging.debug('Starting annotation')
+  data = annotator.annotate(data)
+
+  exporter = snmpexporter.prometheus.Exporter()
+  exporter.export(target, data)
 
 
 if __name__ == '__main__':

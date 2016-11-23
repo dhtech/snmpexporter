@@ -38,23 +38,3 @@ class ForkedResolver(object):
     while True:
       request = self.request.get()
       self.response.put(mibresolver.resolve(request))
-
-
-def probe(host, layer, collections, overrides, snmp_creds,
-          annotator_config, resolver, snmpimpl, annotate):
-  logging.debug('Constructing SNMP target')
-  target = snmpexporter.target.SnmpTarget(host, layer, snmp_creds)
-  logging.debug('Creating SNMP poller')
-  poller = snmpexporter.poller.Poller(collections, overrides, snmpimpl)
-
-  logging.debug('Starting poll')
-  data, timeouts, errors = poller.poll(target)
-
-  if annotate:
-    logging.debug('Creating result annotator')
-    annotator = snmpexporter.annotator.Annotator(annotator_config, resolver)
-
-    logging.debug('Starting annotation')
-    data = annotator.annotate(data)
-
-  return data
