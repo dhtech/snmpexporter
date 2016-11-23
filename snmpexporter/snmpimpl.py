@@ -108,7 +108,11 @@ class NetsnmpImpl(SnmpImpl):
         # contained.
         if not currentoid.startswith(oid):
           break
-        ret[currentoid] = snmp.ResultTuple(result.val, result.type)
+        try:
+          ret[currentoid] = snmp.ResultTuple(
+              result.val.decode(), result.type)
+        except UnicodeDecodeError:
+          ret[currentoid] = snmp.ResultTuple(result.val,result.type)
       # Continue bulk walk
       offset = int(var_list[-1].iid)
       nextoid = var_list[-1].tag
@@ -125,7 +129,7 @@ class NetsnmpImpl(SnmpImpl):
       raise SnmpError('SNMP error while talking to host %s: %s' % (
         target.host, sess.ErrorStr))
 
-    return {var.tag: snmp.ResultTuple(var.val, var.type)}
+    return {var.tag: snmp.ResultTuple(var.val.decode(), var.type)}
 
   def model(self, target):
     model_oids = [
@@ -140,7 +144,7 @@ class NetsnmpImpl(SnmpImpl):
         continue
       value = list(model.values()).pop().value
       if value:
-        return value.decode('utf-8')
+        return value
     raise NoModelOid('No model OID contained a model')
 
   def vlans(self, target):

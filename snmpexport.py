@@ -1,23 +1,10 @@
 #!/usr/bin/env python3
 import argparse
 import logging
-import mibresolver
 import sys
 import yaml
 
-import snmpexporter.target
-import snmpexporter.poller
-import snmpexporter.snmpimpl
-import snmpexporter.annotator
-
-
-class FakeMibresolver(object):
-
-  def resolve(self, oid):
-    import base64
-    _, iid = oid.rsplit('.', 1)
-    return 'DUMMY-MIB::' + base64.b64encode(oid.encode('utf-8')).decode('utf-8') + '.' + iid, {}
-
+import snmpexporter
 
 def main(config_file, host, layer, annotate=True):
   with open(config_file, 'r') as f:
@@ -25,30 +12,22 @@ def main(config_file, host, layer, annotate=True):
   collections = config['collection']
   overrides = config['override']
   snmp_creds = config['snmp']
+  annotator_config = config['annotator']
 
   if not annotate:
     logging.debug('Will not annotate')
 
+  resolver = snmpexporter.ForkedResolver()
+
   logging.debug('Initializing Net-SNMP implemention')
   snmpimpl = snmpexporter.snmpimpl.NetsnmpImpl()
-  logging.debug('Constructing SNMP target')
-  target = snmpexporter.target.SnmpTarget(host, layer, snmp_creds)
-  logging.debug('Creating SNMP poller')
-  poller = snmpexporter.poller.Poller(collections, overrides, snmpimpl)
 
-  logging.debug('Starting poll')
-  data, timeouts, errors = poller.poll(target)
+  results = snmpexporter.probe(
+    host, layer, collections, overrides, snmp_creds, annotator_config,
+    resolver, snmpimpl, annotate)
 
-  if annotate:
-    logging.debug('Creating result annotator')
-    annotator = snmpexporter.annotator.Annotator(config, mibresolver)
-
-    logging.debug('Starting annotation')
-    data = annotator.annotate(data)
-
-  for (oid, vlan), value in sorted(data.items()):
+  for (oid, vlan), value in sorted(results.items()):
     print(str(vlan if vlan else '').ljust(5), oid.ljust(50), value)
-  return
 
 
 if __name__ == '__main__':

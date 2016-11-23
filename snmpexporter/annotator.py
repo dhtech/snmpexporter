@@ -22,6 +22,7 @@ class Annotator(object):
     super(Annotator, self).__init__()
     self.config = config
     self.mibresolver = mibresolver
+    self.mibcache = dict()
 
   def annotate(self, results):
     annotations = self.config.get('annotations', [])
@@ -45,12 +46,9 @@ class Annotator(object):
       [x + '.' for x in self.config.get('labelify', [])])
 
     # Pre-fill the OID/Enum cache to allow annotations to get enum values
-    mibcache = dict()
     for (oid, ctxt), result in results.items():
       resolve = self.mibresolver.resolve(oid)
-      mibcache[oid] = resolve
-      logging.debug(
-          'Loaded OID map %s => %s (enum %s)', oid, resolve[0], resolve[1])
+      self.mibcache[oid] = resolve
       if resolve is None:
         logging.warning('Failed to look up OID %s, ignoring', oid)
         continue
@@ -58,7 +56,7 @@ class Annotator(object):
     # Calculate annotator map
     split_oid_map = collections.defaultdict(dict)
     for (oid, ctxt), result in results.items():
-      name, _ = mibcache[oid]
+      name, _ = self.mibcache[oid]
       _, index = name.split('.', 1)
       key = oid[:-(len(index))]
       split_oid_map[(key, ctxt)][index] = result.value
@@ -72,7 +70,7 @@ class Annotator(object):
       if not ctxt is None:
         vlan = ctxt
 
-      name, enum = mibcache[oid]
+      name, enum = self.mibcache[oid]
       if not '::' in name:
         logging.warning('OID %s resolved to %s (no MIB), ignoring', oid, name)
         continue
@@ -174,7 +172,7 @@ class Annotator(object):
     value = results[(oid, ctxt)].value
 
     # Try enum resolution
-    _, enum = mibcache[oid]
+    _, enum = self.mibcache[oid]
     if enum:
       enum_value = enum.get(value, None)
       if enum_value is None:
