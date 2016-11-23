@@ -21,11 +21,10 @@ class Annotator(object):
   def __init__(self, config, mibresolver):
     super(Annotator, self).__init__()
     self.config = config
-    self.mibcache = {}
     self.mibresolver = mibresolver
 
   def annotate(self, results):
-    annotations = self.config.get('annotator', 'annotations') or []
+    annotations = self.config.get('annotations', [])
 
     # Calculate map to skip annotation if we're sure we're not going to annotate
     # TODO(bluecmd): This could be cached
@@ -43,14 +42,13 @@ class Annotator(object):
         annotation_map[(annotate + '.', offset)] = annotation['with']
 
     labelification = set(
-      [x + '.' for x in self.config.get('annotator', 'labelify') or []])
+      [x + '.' for x in self.config.get('labelify', [])])
 
     # Pre-fill the OID/Enum cache to allow annotations to get enum values
+    mibcache = dict()
     for (oid, ctxt), result in results.items():
-      resolve = self.mibcache.get(oid, None)
-      if resolve is None:
-        resolve = self.mibresolver.resolve(oid)
-        self.mibcache[oid] = resolve
+      resolve = self.mibresolver.resolve(oid)
+      mibcache[oid] = resolve
       if resolve is None:
         logging.warning('Failed to look up OID %s, ignoring', oid)
         continue
@@ -58,7 +56,7 @@ class Annotator(object):
     # Calculate annotator map
     split_oid_map = collections.defaultdict(dict)
     for (oid, ctxt), result in results.items():
-      resolve = self.mibcache.get(oid, None)
+      resolve = mibcache.get(oid, None)
       if resolve is None:
         continue
       name, _ = resolve
@@ -69,7 +67,7 @@ class Annotator(object):
 
     annotated_results = {}
     for (oid, ctxt), result in results.items():
-      resolve = self.mibcache.get(oid, None)
+      resolve = mibcache.get(oid, None)
       if resolve is None:
         continue
 
@@ -183,7 +181,7 @@ class Annotator(object):
     value = results[(oid, ctxt)].value
 
     # Try enum resolution
-    _, enum = self.mibcache[oid]
+    _, enum = mibcache[oid]
     if enum:
       enum_value = enum.get(value, None)
       if enum_value is None:

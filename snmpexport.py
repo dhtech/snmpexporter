@@ -10,6 +10,14 @@ import snmpexporter.snmpimpl
 import snmpexporter.annotator
 
 
+class FakeMibresolver(object):
+
+  def resolve(self, oid):
+    import base64
+    _, iid = oid.rsplit('.', 1)
+    return 'DUMMY-MIB::' + base64.b64encode(oid.encode('utf-8')).decode('utf-8') + '.' + iid, {}
+
+
 def main(config_file, host, layer, annotate=True):
   with open(config_file, 'r') as f:
     config = yaml.safe_load(f.read())
@@ -18,7 +26,7 @@ def main(config_file, host, layer, annotate=True):
   snmp_creds = config['snmp']
 
   # TODO(bluecmd): fix
-  mibresolver = None
+  mibresolver = FakeMibresolver()
 
   if not annotate:
     logging.debug('Will not annotate')
@@ -31,19 +39,18 @@ def main(config_file, host, layer, annotate=True):
   poller = snmpexporter.poller.Poller(collections, overrides, snmpimpl)
 
   logging.debug('Starting poll')
-  raw_data, timeouts, errors = poller.poll(target)
+  data, timeouts, errors = poller.poll(target)
 
-  if not annotate:
-    for (oid, vlan), value in sorted(raw_data.items()):
-      print(str(vlan if vlan else '').ljust(5), oid.ljust(50), value)
-    return
+  if annotate:
+    logging.debug('Creating result annotator')
+    annotator = snmpexporter.annotator.Annotator(config, mibresolver)
 
-  logging.debug('Creating result annotator')
-  annotator = snmpexporter.annotator.Annotator(config, mibresolver)
+    logging.debug('Starting annotation')
+    data = annotator.annotate(data)
 
-  logging.debug('Starting annotation')
-  for result in annotator.annotate(raw_data):
-    print(result)
+  for (oid, vlan), value in sorted(data.items()):
+    print(str(vlan if vlan else '').ljust(5), oid.ljust(50), value)
+  return
 
 
 if __name__ == '__main__':
