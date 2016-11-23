@@ -125,7 +125,7 @@ class NetsnmpImpl(SnmpImpl):
     sess.get(var_list)
     if sess.ErrorStr != '':
       if sess.ErrorStr == 'Timeout':
-        raise TimeoutError('Timeout getting %s from %s' % (oid, self.host))
+        raise TimeoutError('Timeout getting %s from %s' % (oid, target.host))
       raise SnmpError('SNMP error while talking to host %s: %s' % (
         target.host, sess.ErrorStr))
 

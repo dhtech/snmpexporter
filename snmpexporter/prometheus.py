@@ -12,10 +12,6 @@ class Exporter(object):
     'COUNTER', 'COUNTER64', 'INTEGER', 'INTEGER32', 'TICKS',
     'GAUGE', 'ANNOTATED'])
 
-  def __init__(self):
-    super(Exporter, self).__init__()
-
-
   def export(self, target, results):
     grouped_metrics = collections.defaultdict(dict)
     for result in results.values():
@@ -23,7 +19,7 @@ class Exporter(object):
           self._export(target, result))
     for (mib, obj), metrics in grouped_metrics.items():
       for x in self.format_metrics(mib, obj, metrics):
-        print(x)
+        yield x
 
   def _export(self, target, result):
     if result.data.type == 'COUNTER64' or result.data.type == 'COUNTER':

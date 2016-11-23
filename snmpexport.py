@@ -45,7 +45,8 @@ def main(config_file, host, layer, annotate=True):
   data = annotator.annotate(data)
 
   exporter = snmpexporter.prometheus.Exporter()
-  exporter.export(target, data)
+  for x in exporter.export(target, data):
+    print(x)
 
 
 if __name__ == '__main__':
