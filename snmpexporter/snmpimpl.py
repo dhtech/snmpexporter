@@ -5,6 +5,21 @@ import sys
 from snmpexporter import snmp
 
 
+class Error(Exception):
+  """Base error class for this module."""
+  pass
+
+
+class SnmpError(Error):
+  """A general SNMP error happened when talking to the device."""
+  pass
+
+
+class TimeoutError(Error):
+  """A timeout happened when talking to the device."""
+  pass
+
+
 class SnmpImpl(object):
 
   def model(self):
@@ -108,7 +123,7 @@ class NetsnmpImpl(SnmpImpl):
       if sess.ErrorStr == 'Timeout':
         raise TimeoutError('Timeout getting %s from %s' % (oid, self.host))
       raise SnmpError('SNMP error while talking to host %s: %s' % (
-        self.host, sess.ErrorStr))
+        target.host, sess.ErrorStr))
 
     return {var.tag: snmp.ResultTuple(var.val, var.type)}
 
