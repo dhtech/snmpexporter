@@ -1,5 +1,8 @@
 import logging
+import os
 import sys
+
+from snmpexporter import snmp
 
 
 class SnmpImpl(object):
@@ -25,36 +28,37 @@ class NetsnmpImpl(SnmpImpl):
     self.first_load = True
 
   def _snmp_session(self, target, vlan=None, timeout=1000000, retries=3):
-    if self.first_load:
-      # Loading MIBs can be very noisy, so we close stderr
-      # Ideally we would just call netsnmp_register_loghandler but that isn't
-      # exported :-(
-      stderr = os.dup(sys.stderr.fileno())
-      null = os.open(os.devnull, os.O_RDWR)
-      os.close(sys.stderr.fileno())
-      os.dup2(null, sys.stderr.fileno())
-      os.close(null)
+    try:
+      if self.first_load:
+        # Loading MIBs can be very noisy, so we close stderr
+        # Ideally we would just call netsnmp_register_loghandler but that isn't
+        # exported :-(
+        stderr = os.dup(sys.stderr.fileno())
+        null = os.open(os.devnull, os.O_RDWR)
+        os.close(sys.stderr.fileno())
+        os.dup2(null, sys.stderr.fileno())
+        os.close(null)
 
-    if target.version == 3:
-      context = ('vlan-%s' % vlan) if vlan else ''
-      session = self.netsnmp.Session(Version=3, DestHost=target.full_host,
-        SecName=target.user, SecLevel=target.sec_level, Context=context,
-        AuthProto=target.auth_proto, AuthPass=target.auth,
-        PrivProto=target.priv_proto, PrivPass=target.priv,
-        UseNumeric=1, Timeout=timeout, Retries=retries)
-    else:
-      community = (
-        '%s@%s' % (target.community, vlan)) if vlan else target.community
-      session = self.netsnmp.Session(
-        Version=target.version, DestHost=target.full_host,
-        Community=community, UseNumeric=1, Timeout=timeout,
-        Retries=retries)
-
-    if first_load:
-      # Restore stderr
-      os.dup2(stderr, sys.stderr.fileno())
-      os.close(stderr)
-      self.first_load = False
+      if target.version == 3:
+        context = ('vlan-%s' % vlan) if vlan else ''
+        session = self.netsnmp.Session(Version=3, DestHost=target.full_host,
+          SecName=target.user, SecLevel=target.sec_level, Context=context,
+          AuthProto=target.auth_proto, AuthPass=target.auth,
+          PrivProto=target.priv_proto, PrivPass=target.priv,
+          UseNumeric=1, Timeout=timeout, Retries=retries)
+      else:
+        community = (
+          '%s@%s' % (target.community, vlan)) if vlan else target.community
+        session = self.netsnmp.Session(
+          Version=target.version, DestHost=target.full_host,
+          Community=community, UseNumeric=1, Timeout=timeout,
+          Retries=retries)
+    finally:
+      if self.first_load:
+        # Restore stderr
+        os.dup2(stderr, sys.stderr.fileno())
+        os.close(stderr)
+        self.first_load = False
     return session
 
   def walk(self, target, oid, vlan=None):
@@ -89,7 +93,7 @@ class NetsnmpImpl(SnmpImpl):
         # contained.
         if not currentoid.startswith(oid):
           break
-        ret[currentoid] = ResultTuple(result.val, result.type)
+        ret[currentoid] = snmp.ResultTuple(result.val, result.type)
       # Continue bulk walk
       offset = int(var_list[-1].iid)
       nextoid = var_list[-1].tag
@@ -106,7 +110,7 @@ class NetsnmpImpl(SnmpImpl):
       raise SnmpError('SNMP error while talking to host %s: %s' % (
         self.host, sess.ErrorStr))
 
-    return {var.tag: ResultTuple(var.val, var.type)}
+    return {var.tag: snmp.ResultTuple(var.val, var.type)}
 
   def model(self, target):
     model_oids = [
@@ -121,7 +125,7 @@ class NetsnmpImpl(SnmpImpl):
         continue
       value = list(model.values()).pop().value
       if value:
-        return value
+        return value.decode('utf-8')
     raise NoModelOid('No model OID contained a model')
 
   def vlans(self, target):

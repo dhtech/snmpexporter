@@ -46,16 +46,19 @@ def _poll(data):
 
 class Poller(object):
 
-  def __init__(self, config):
+  def __init__(self, collections, overrides, snmpimpl):
     super(Poller, self).__init__()
     self.model_oid_cache = {}
     self.model_oid_cache_incarnation = 0
     self.pool = multiprocessing.Pool(processes=VLAN_MAP_POOL)
+    self.snmpimpl = snmpimpl
+    self.collections = collections
+    self.overrides = overrides
 
   def gather_oids(self, target, model):
     oids = set()
     vlan_aware_oids = set()
-    for collection_name, collection in config.get('collection').items():
+    for collection_name, collection in self.collections.items():
       for regexp in collection['models']:
         layers = collection.get('layers', None)
         if layers and target.layer not in layers:
@@ -96,7 +99,7 @@ class Poller(object):
 
   def _walk(self, target):
     try:
-      model = target.model()
+      model = self.snmpimpl.model(target)
     except snmp.TimeoutError as e:
       logging.exception('Could not determine model of %s:', target.host)
       return None, 0, 1

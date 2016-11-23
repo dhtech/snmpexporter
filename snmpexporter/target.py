@@ -12,9 +12,10 @@ class SnmpTarget(object):
   def __init__(self, host, layer, config):
     if config.get('snmp', layer) is None:
       raise LayerNotFound(layer)
-    self._read_config(**config.get('snmp', layer))
+    self._read_config(**config[layer])
     self.host = host
-    self.full_host = "[%s]:%s" % (self.host, self.port)
+    self.layer = layer
+    self.full_host = "%s:%s" % (self.host, self.port)
     self.max_size = 256
 
   def _read_config(self, version, community=None,
