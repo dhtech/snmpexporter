@@ -5,6 +5,7 @@ VERSION = $(shell echo $(TAG) | grep -o 'v[0-9\.]*' \
 BRANCH = $(shell git rev-parse --abbrev-ref HEAD)
 TREE = $(shell test $(TAG) = undefined && echo $(BRANCH) || echo $(TAG))
 COVERAGE ?= 'python3-coverage'
+export PYTHONPATH=$(CURDIR)
 
 all: test
 
@@ -23,8 +24,7 @@ distclean: clean
 
 test:
 	$(COVERAGE) erase
-	PYTHONPATH=$(CURDIR) echo $(wildcard */*_test.py) | \
-	  xargs -n 1 $(COVERAGE) run -p
+	echo $(wildcard */*_test.py) | xargs -n 1 $(COVERAGE) run -p
 	echo $(wildcard *_test.py) | xargs -n 1 $(COVERAGE) run -p
 	$(COVERAGE) combine
 	$(COVERAGE) report -m

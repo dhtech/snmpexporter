@@ -2,9 +2,9 @@
 import collections
 import logging
 import re
-
 import multiprocessing
-import snmp
+
+from snmpexporter import snmp
 
 
 # How many sub-pollers to spawn to enumerate VLAN OIDs
