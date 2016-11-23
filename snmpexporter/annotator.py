@@ -49,6 +49,8 @@ class Annotator(object):
     for (oid, ctxt), result in results.items():
       resolve = self.mibresolver.resolve(oid)
       mibcache[oid] = resolve
+      logging.debug(
+          'Loaded OID map %s => %s (enum %s)', oid, resolve[0], resolve[1])
       if resolve is None:
         logging.warning('Failed to look up OID %s, ignoring', oid)
         continue
@@ -56,21 +58,13 @@ class Annotator(object):
     # Calculate annotator map
     split_oid_map = collections.defaultdict(dict)
     for (oid, ctxt), result in results.items():
-      resolve = mibcache.get(oid, None)
-      if resolve is None:
-        continue
-      name, _ = resolve
-
+      name, _ = mibcache[oid]
       _, index = name.split('.', 1)
       key = oid[:-(len(index))]
       split_oid_map[(key, ctxt)][index] = result.value
 
     annotated_results = {}
     for (oid, ctxt), result in results.items():
-      resolve = mibcache.get(oid, None)
-      if resolve is None:
-        continue
-
       labels = {}
       vlan = None
 
@@ -78,8 +72,7 @@ class Annotator(object):
       if not ctxt is None:
         vlan = ctxt
 
-      name, enum = resolve
-
+      name, enum = mibcache[oid]
       if not '::' in name:
         logging.warning('OID %s resolved to %s (no MIB), ignoring', oid, name)
         continue

@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import argparse
 import logging
+import mibresolver
 import sys
 import yaml
 
@@ -24,9 +25,6 @@ def main(config_file, host, layer, annotate=True):
   collections = config['collection']
   overrides = config['override']
   snmp_creds = config['snmp']
-
-  # TODO(bluecmd): fix
-  mibresolver = FakeMibresolver()
 
   if not annotate:
     logging.debug('Will not annotate')
