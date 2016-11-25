@@ -8,7 +8,7 @@ SNMP Poller written for DreamHack.
 
 This product was previously called snmpcollector when it was part of the bigger
 monitoring system called "dhmon". It is nowadays fully standalone and should
-not have very few if any ties back to DreamHack.
+have very few if any ties back to DreamHack.
 
 ## What it is
 
