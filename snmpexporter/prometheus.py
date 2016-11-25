@@ -21,6 +21,18 @@ class Exporter(object):
       for x in self.format_metrics(mib, obj, metrics):
         yield x
 
+    # Export statistics
+    yield '# HELP snmp_export_latency Latency breakdown for SNMP poll'
+    yield '# TYPE snmp_export_latency guage'
+    for (step, latency) in target.timeline():
+      yield 'snmp_export_latency{step="%s"} %s' % (step, latency)
+    yield '# HELP snmp_export_errors Errors for SNMP poll'
+    yield '# TYPE snmp_export_errors guage'
+    yield 'snmp_export_errors %s' % target.errors
+    yield '# HELP snmp_export_timeouts Timeouts for SNMP poll'
+    yield '# TYPE snmp_export_timeouts guage'
+    yield 'snmp_export_timeouts %s' % target.timeouts
+
   def _export(self, target, result):
     if result.data.type == 'COUNTER64' or result.data.type == 'COUNTER':
       metric_type = 'counter'

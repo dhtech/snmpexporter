@@ -22,8 +22,8 @@ tls.snmpimpl = None
 
 
 def poll(config, host, layer):
-  logging.debug('Initializing Net-SNMP implemention')
   if not tls.snmpimpl:
+    logging.debug('Initializing Net-SNMP implemention')
     tls.snmpimpl = snmpexporter.snmpimpl.NetsnmpImpl()
 
   collections = config['collection']
@@ -33,24 +33,33 @@ def poll(config, host, layer):
   logging.debug('Constructing SNMP target')
   target = snmpexporter.target.SnmpTarget(host, layer, snmp_creds)
 
+  target.start('poll')
+
   logging.debug('Creating SNMP poller')
   poller = snmpexporter.poller.Poller(collections, overrides, tls.snmpimpl)
 
   logging.debug('Starting poll')
   data, timeouts, errors = poller.poll(target)
-  return target, data, timeouts, errors
+  target.add_timeouts(timeouts)
+  target.add_errors(errors)
+
+  return target, data
 
 
 def annotate(config, resolver, f):
-  target, data, timeouts, errors = f
+  target, data = f
 
   annotator_config = config['annotator']
+
+  target.start('annotate')
 
   logging.debug('Creating result annotator')
   annotator = snmpexporter.annotator.Annotator(annotator_config, resolver)
 
   logging.debug('Starting annotation')
   result = annotator.annotate(data)
+
+  target.done()
 
   exporter = snmpexporter.prometheus.Exporter()
   return exporter.export(target, result)

@@ -91,7 +91,7 @@ class Annotator(object):
         if result.value == '' or result.type not in self.LABEL_TYPES:
           continue
 
-        bytes_values = result.value
+        bytes_value = result.value
         if isinstance(result.value, str):
           bytes_value = result.value.encode()
         labels['value'] = self.string_to_label_value(bytes_value)

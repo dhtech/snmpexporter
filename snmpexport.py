@@ -27,22 +27,30 @@ def main(config_file, host, layer, annotate=True):
   logging.debug('Constructing SNMP target')
   target = snmpexporter.target.SnmpTarget(host, layer, snmp_creds)
 
+  target.start('poll')
+
   logging.debug('Creating SNMP poller')
   poller = snmpexporter.poller.Poller(collections, overrides, snmpimpl)
 
   logging.debug('Starting poll')
   data, timeouts, errors = poller.poll(target)
+  target.add_timeouts(timeouts)
+  target.add_errors(errors)
 
   if not annotate:
     for (oid, vlan), value in sorted(data.items()):
       print(str(vlan if vlan else '').ljust(5), oid.ljust(50), value)
     return
 
+  target.start('annotate')
+
   logging.debug('Creating result annotator')
   annotator = snmpexporter.annotator.Annotator(annotator_config, resolver)
 
   logging.debug('Starting annotation')
   data = annotator.annotate(data)
+
+  target.done()
 
   exporter = snmpexporter.prometheus.Exporter()
   for x in exporter.export(target, data):

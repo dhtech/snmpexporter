@@ -1,3 +1,4 @@
+import time
 
 
 class Error(Exception):
@@ -17,6 +18,9 @@ class SnmpTarget(object):
     self.layer = layer
     self.full_host = "%s:%s" % (self.host, self.port)
     self.max_size = 256
+    self.timeouts = 0
+    self.errors = 0
+    self.markers = []
 
   def _read_config(self, version, community=None,
       user=None, auth_proto=None, auth=None, priv_proto=None, priv=None,
@@ -30,3 +34,20 @@ class SnmpTarget(object):
     self.priv = priv
     self.sec_level = sec_level
     self.port = port
+
+  def add_timeouts(self, timeouts):
+    self.timeouts = self.timeouts + timeouts
+
+  def add_errors(self, errors):
+    self.errors = self.errors + errors
+
+  def start(self, step):
+    self.markers.append((step, time.time()))
+
+  def done(self):
+    self.markers.append(('done', time.time()))
+
+  def timeline(self):
+    return [
+        (fro[0], to[1] - fro[1])
+        for fro, to in zip(self.markers, self.markers[1:])]
