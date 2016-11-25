@@ -3,7 +3,6 @@ import collections
 import unittest
 import yaml
 
-from snmpexporter import config
 from snmpexporter import annotator
 from snmpexporter import snmp
 
@@ -51,18 +50,19 @@ class TestAnnotator(unittest.TestCase):
     self.mibresolver = MockMibResolver()
 
   def runTest(self, expected_entries, result, cfg):
+    c = yaml.load(cfg) or {}
     logic = annotator.Annotator(
-      config=config.Config(cfg),
+      config=c.get('annotator', {}),
       mibresolver=self.mibresolver)
     expected_output = expected_entries
     output = logic.annotate(result)
     if output != expected_output:
       print('Output is not as expected!')
       print('Output:')
-      for oid, v in output.results.items():
+      for oid, v in output.items():
         print((oid, v))
       print('Expected:')
-      for oid, v in expected_output.results.items():
+      for oid, v in expected_output.items():
         print((oid, v))
     self.assertEqual(output, expected_output)
 
@@ -323,9 +323,11 @@ annotator:
     }
     expected = self.newExpectedFromResult(result)
     expected.update(self.createResultEntry(('.10.2.1', None), identities,
-      {'value': 'correct', 'hex': binascii.hexlify('correct'.encode())}))
+      {'value': 'correct', 'hex': binascii.hexlify(
+          'correct'.encode()).decode()}))
     expected.update(self.createResultEntry(('.10.2.2', None), identities,
-      {'value': 'abc', 'hex': binascii.hexlify('\xffabc\xff '.encode())}))
+      {'value': 'abc', 'hex': binascii.hexlify(
+          '\xffabc\xff '.encode()).decode()}))
     # Empty strings should not be included
     del expected[('.10.2.3', None)]
     # Only strings are labelified
