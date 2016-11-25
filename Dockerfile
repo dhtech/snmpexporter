@@ -11,21 +11,10 @@ RUN (mkdir -p /var/lib/mibs/std /tmp/librenms; cd /tmp/librenms; \
   unzip master.zip && mv librenms-master/mibs/* /var/lib/mibs/std/) && \
   rm -r /tmp/librenms
 
+ADD etc/snmp.conf /etc/snmp/
+
 ADD . /tmp/snmpexporter
-
-RUN (cd /tmp/snmpexporter/mibresolver; python3 setup.py build install)
-
-RUN make test -C /tmp/snmpexporter 2> /dev/null && \
-  mkdir -p /opt/snmpexporter/ && \
-  find /tmp/snmpexporter/ -name \*.py -not -name \*_test\* -not -name setup.py \
-  -printf '%P\n' | \
-  xargs -I{} install -m0644 -D /tmp/snmpexporter/{} /opt/snmpexporter/{} && \
-  rm -fr /tmp/snmpexporter/ && \
-  chmod +x /opt/snmpexporter/snmpexport.py /opt/snmpexporter/snmpexporterd.py && \
-  ls -laR /opt
-
-add etc/snmp.conf /etc/snmp/
-ADD etc/snmpexporter.yaml /etc/snmpexporter/
+RUN make all install -C /tmp/snmpexporter && ls -laR /opt
 
 EXPOSE 9190
 CMD ["/opt/snmpexporter/snmpexporterd.py", \

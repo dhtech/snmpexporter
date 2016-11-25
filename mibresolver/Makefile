@@ -1,5 +1,7 @@
+DESTDIR ?= /
+
 clean:
 	rm -fr build/
 
 install:
-	python setup.py install --root $(DESTDIR) $(COMPILE)
+	python3 setup.py install --root $(DESTDIR) $(COMPILE)
