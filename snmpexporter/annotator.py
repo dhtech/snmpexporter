@@ -91,7 +91,7 @@ class Annotator(object):
         if result.value == '' or result.type not in self.LABEL_TYPES:
           continue
         labels['value'] = self.string_to_label_value(result.value)
-        labels['hex'] = binascii.hexlify(result.value.encode())
+        labels['hex'] = binascii.hexlify(result.value.encode()).decode()
         result = snmp.ResultTuple('NaN', 'ANNOTATED')
 
       # Do something almost like labelification for enums
