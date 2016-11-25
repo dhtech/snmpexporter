@@ -91,6 +91,10 @@ class PollerResource(resource.Resource):
       request.write('\n'.encode())
     request.finish()
 
+  def _annotate_done(self, f):
+    logging.debug('Request cancelled, cancelling future %s', f)
+    f.cancel()
+
   def _poll_done(self, request, f):
     if f.exception():
       logging.error('Poller failed: %s', repr(f.exception()))
@@ -103,6 +107,7 @@ class PollerResource(resource.Resource):
     f = self.annotator_executor.submit(
         annotate, self.config, self.resolver, f.result())
     f.add_done_callback(functools.partial(self._annotate_done, request))
+    request.notifyFinish().addErrback(self._responseFailed, f)
 
   def render_GET(self, request):
     path = request.path.decode()
@@ -133,6 +138,7 @@ class PollerResource(resource.Resource):
     f.add_done_callback(functools.partial(self._poll_done, request))
 
     logging.debug('Starting poll')
+    request.notifyFinish().addErrback(self._responseFailed, f)
     return server.NOT_DONE_YET
 
 
