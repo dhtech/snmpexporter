@@ -88,7 +88,7 @@ class Poller(object):
     vlans = set([None])
     try:
       if vlan_oids:
-        vlans.update(target.vlans())
+        vlans.update(self.snmpimpl.vlans(target))
     except snmp.Error as e:
       errors += 1
       logging.warning('Could not list VLANs: %s', str(e))
