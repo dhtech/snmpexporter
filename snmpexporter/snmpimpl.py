@@ -95,8 +95,10 @@ class NetsnmpImpl(SnmpImpl):
       if sess.ErrorStr == 'Timeout':
         if target.max_size == 1:
           raise TimeoutError(
-              'Timeout getting %s from %s' % (nextoid, self.host))
+              'Timeout getting %s from %s' % (nextoid, target.host))
         target.max_size = int(target.max_size / 16)
+        logging.debug('Timeout getting %s from %s, lowering max size to %d' % (
+          nextoid, target.host, target.max_size))
         continue
       if sess.ErrorStr != '':
         raise SnmpError('SNMP error while walking host %s: %s' % (

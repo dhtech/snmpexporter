@@ -16,11 +16,13 @@ class Poller(object):
     self.collections = collections
     self.overrides = overrides
 
-  def gather_oids(self, target, model):
+  def assemble_walk_parameters(self, target, model):
     oids = set()
     vlan_aware_oids = set()
+    options = dict()
     for collection_name, collection in self.collections.items():
       for regexp in collection['models']:
+        options.update(collection.get('options', {}))
         layers = collection.get('layers', None)
         if layers and target.layer not in layers:
           continue
@@ -35,7 +37,7 @@ class Poller(object):
             vlan_aware_oids.update(set(collection['oids']))
           else:
             oids.update(set(collection['oids']))
-    return (list(oids), list(vlan_aware_oids))
+    return (list(oids), list(vlan_aware_oids), options)
 
   def process_overrides(self, results):
     if not self.overrides:
@@ -71,7 +73,12 @@ class Poller(object):
       return None, 1, 0
 
     logging.debug('Object %s is model %s', target.host, model)
-    global_oids, vlan_oids = self.gather_oids(target, model)
+    global_oids, vlan_oids, options = self.assemble_walk_parameters(
+        target, model)
+
+    # Apply walk options
+    target.max_size = min(options.get('max-size'), target.max_size)
+    logging.debug('Using max_size %d for %s', target.max_size, target.host)
 
     timeouts = 0
     errors = 0
