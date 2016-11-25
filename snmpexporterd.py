@@ -83,9 +83,7 @@ class PollerResource(resource.Resource):
     # .. but annotators are just CPU, so use lightweight threads.
     self.annotator_executor = futures.ThreadPoolExecutor(
         max_workers=annotator_pool)
-
-    with open(config_file, 'r') as f:
-      self.config = yaml.safe_load(f.read())
+    self.config_file = config_file
 
   def _response_failed(self, err, f):
     logging.debug('Request cancelled, cancelling future %s', f)
@@ -107,10 +105,10 @@ class PollerResource(resource.Resource):
       request.write('\n'.encode())
     request.finish()
 
-  def _reactor_poll_done(self, request, f):
-    reactor.callFromThread(self._poll_done, request, f)
+  def _reactor_poll_done(self, config, request, f):
+    reactor.callFromThread(self._poll_done, config, request, f)
 
-  def _poll_done(self, request, f):
+  def _poll_done(self, config, request, f):
     if f.exception():
       logging.error('Poller failed: %s', repr(f.exception()))
       request.setResponseCode(500, message=(
@@ -120,7 +118,7 @@ class PollerResource(resource.Resource):
 
     logging.debug('Poller done, starting annotation')
     f = self.annotator_executor.submit(
-        annotate, self.config, self.resolver, f.result())
+        annotate, config, self.resolver, f.result())
     f.add_done_callback(functools.partial(self._reactor_annotate_done, request))
     request.notifyFinish().addErrback(self._response_failed, f)
 
@@ -149,8 +147,12 @@ class PollerResource(resource.Resource):
     layer = layer.decode()
     target = target.decode()
 
-    f = self.poller_executor.submit(poll, self.config, target, layer)
-    f.add_done_callback(functools.partial(self._reactor_poll_done, request))
+    with open(self.config_file, 'r') as f:
+      config = yaml.safe_load(f.read())
+
+    f = self.poller_executor.submit(poll, config, target, layer)
+    f.add_done_callback(
+        functools.partial(self._reactor_poll_done, config, request))
 
     logging.debug('Starting poll')
     request.notifyFinish().addErrback(self._response_failed, f)
