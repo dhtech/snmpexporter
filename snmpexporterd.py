@@ -88,8 +88,8 @@ class PollerResource(resource.Resource):
   def _annotate_done(self, request, f):
     if f.exception():
       logging.error('Annotator failed: %s', repr(f.exception()))
-      request.setResponseCode(500)
-      request.write(('500 Annotator failed: %s' % repr(f.exception())).encode())
+      request.setResponseCode(500, message=(
+          'Annotator failed: %s' % repr(f.exception())).encode())
       request.finish()
       return
 
@@ -104,8 +104,8 @@ class PollerResource(resource.Resource):
   def _poll_done(self, request, f):
     if f.exception():
       logging.error('Poller failed: %s', repr(f.exception()))
-      request.setResponseCode(500)
-      request.write(('500 Poller failed: %s' % repr(f.exception())).encode())
+      request.setResponseCode(500, message=(
+          'Poller failed: %s' % repr(f.exception())).encode())
       request.finish()
       return
 
