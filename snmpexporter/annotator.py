@@ -90,8 +90,12 @@ class Annotator(object):
         # Skip empty strings or non-strings that are up for labelification
         if result.value == '' or result.type not in self.LABEL_TYPES:
           continue
-        labels['value'] = self.string_to_label_value(result.value)
-        labels['hex'] = binascii.hexlify(result.value.encode()).decode()
+
+        bytes_values = result.value
+        if isinstance(result.value, str):
+          bytes_value = result.value.encode()
+        labels['value'] = self.string_to_label_value(bytes_value)
+        labels['hex'] = binascii.hexlify(bytes_value).decode()
         result = snmp.ResultTuple('NaN', 'ANNOTATED')
 
       # Do something almost like labelification for enums
@@ -183,5 +187,5 @@ class Annotator(object):
     return value
 
   def string_to_label_value(self, value):
-    value = ''.join(x for x in value.strip() if x in self.ALLOWED_CHARACTERS)
-    return value.strip()
+    value = [x for x in value if x in self.ALLOWED_CHARACTERS.encode()]
+    return bytes(value).decode().strip()
