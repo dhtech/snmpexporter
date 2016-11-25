@@ -60,6 +60,10 @@ class Exporter(object):
     out.append('# TYPE {0} {1}'.format(obj, metrics_type))
     for i in sorted(metrics.keys()):
       metric = metrics[i]
+      if metric.type != metrics_type:
+        # This happens if we have a collision somewhere ('local' is common)
+        # Just ignore this for now.
+        continue
 
       label_list = ['{0}="{1}"'.format(k, v) for k, v in metric.labels.items()]
       label_string = ','.join(label_list)
