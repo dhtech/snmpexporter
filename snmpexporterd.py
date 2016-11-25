@@ -149,7 +149,7 @@ if __name__ == '__main__':
   parser.add_argument('--annotator-pool', dest='annotator_pool', type=int,
           help='number of threads to use to annotate', default=5)
   parser.add_argument('--port', dest='port', type=int,
-          help='port to listen to', default=9191)
+          help='port to listen to', default=9190)
   args = parser.parse_args()
 
   # Logging setup
