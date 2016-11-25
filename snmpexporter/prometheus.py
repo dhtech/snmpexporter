@@ -23,14 +23,14 @@ class Exporter(object):
 
     # Export statistics
     yield '# HELP snmp_export_latency Latency breakdown for SNMP poll'
-    yield '# TYPE snmp_export_latency guage'
+    yield '# TYPE snmp_export_latency gauge'
     for (step, latency) in target.timeline():
       yield 'snmp_export_latency{step="%s"} %s' % (step, latency)
     yield '# HELP snmp_export_errors Errors for SNMP poll'
-    yield '# TYPE snmp_export_errors guage'
+    yield '# TYPE snmp_export_errors gauge'
     yield 'snmp_export_errors %s' % target.errors
     yield '# HELP snmp_export_timeouts Timeouts for SNMP poll'
-    yield '# TYPE snmp_export_timeouts guage'
+    yield '# TYPE snmp_export_timeouts gauge'
     yield 'snmp_export_timeouts %s' % target.timeouts
 
   def _export(self, target, result):
