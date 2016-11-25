@@ -23,14 +23,16 @@ class FakeResolver(object):
 class ForkedResolver(object):
 
   def __init__(self):
+    self.lock = multiprocessing.Lock()
     self.request = multiprocessing.Queue()
     self.response = multiprocessing.Queue()
     self.thread = multiprocessing.Process(target=self.run, daemon=True)
     self.thread.start()
 
   def resolve(self, oid):
-    self.request.put(oid)
-    return self.response.get()
+    with self.lock:
+      self.request.put(oid)
+      return self.response.get()
 
   def run(self):
     logging.debug('Initializing MIB resolver')

@@ -31,7 +31,6 @@ class Exporter(object):
 
     labels = dict(result.labels)
     labels['index'] = result.index
-    labels['layer'] = target.layer
 
     return Metric(result.obj, metric_type, labels, result.data.value)
 
