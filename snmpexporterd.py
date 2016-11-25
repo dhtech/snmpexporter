@@ -78,6 +78,13 @@ class PollerResource(resource.Resource):
     with open(config_file, 'r') as f:
       self.config = yaml.safe_load(f.read())
 
+  def _response_failed(self, err, f):
+    logging.debug('Request cancelled, cancelling future %s', f)
+    f.cancel()
+
+  def _reactor_annotate_done(self, request, f):
+    reactor.callFromThread(self._annotate_done, request, f)
+
   def _annotate_done(self, request, f):
     if f.exception():
       logging.error('Annotator failed: %s', repr(f.exception()))
@@ -91,9 +98,8 @@ class PollerResource(resource.Resource):
       request.write('\n'.encode())
     request.finish()
 
-  def _annotate_done(self, f):
-    logging.debug('Request cancelled, cancelling future %s', f)
-    f.cancel()
+  def _reactor_poll_done(self, request, f):
+    reactor.callFromThread(self._poll_done, request, f)
 
   def _poll_done(self, request, f):
     if f.exception():
@@ -106,8 +112,8 @@ class PollerResource(resource.Resource):
     logging.debug('Poller done, starting annotation')
     f = self.annotator_executor.submit(
         annotate, self.config, self.resolver, f.result())
-    f.add_done_callback(functools.partial(self._annotate_done, request))
-    request.notifyFinish().addErrback(self._responseFailed, f)
+    f.add_done_callback(functools.partial(self._reactor_annotate_done, request))
+    request.notifyFinish().addErrback(self._response_failed, f)
 
   def render_GET(self, request):
     path = request.path.decode()
@@ -135,10 +141,10 @@ class PollerResource(resource.Resource):
     target = target.decode()
 
     f = self.poller_executor.submit(poll, self.config, target, layer)
-    f.add_done_callback(functools.partial(self._poll_done, request))
+    f.add_done_callback(functools.partial(self._reactor_poll_done, request))
 
     logging.debug('Starting poll')
-    request.notifyFinish().addErrback(self._responseFailed, f)
+    request.notifyFinish().addErrback(self._response_failed, f)
     return server.NOT_DONE_YET
 
 

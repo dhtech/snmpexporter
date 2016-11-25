@@ -22,13 +22,13 @@ class Poller(object):
     options = dict()
     for collection_name, collection in self.collections.items():
       for regexp in collection['models']:
-        options.update(collection.get('options', {}))
         layers = collection.get('layers', None)
         if layers and target.layer not in layers:
           continue
         if 'oids' in collection and re.match(regexp, model):
           logging.debug(
               'Model %s matches collection %s', model, collection_name)
+          options.update(collection.get('options', {}))
           # VLAN aware collections are run against every VLAN.
           # We don't want to run all the other OIDs (there can be a *lot* of
           # VLANs).
@@ -77,7 +77,8 @@ class Poller(object):
         target, model)
 
     # Apply walk options
-    target.max_size = min(options.get('max-size'), target.max_size)
+    target.max_size = min(
+        options.get('max-size', target.max_size), target.max_size)
     logging.debug('Using max_size %d for %s', target.max_size, target.host)
 
     timeouts = 0
