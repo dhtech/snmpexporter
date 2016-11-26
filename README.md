@@ -27,12 +27,24 @@ minor annotation features that might be useful, but nothing extraordinary.
 
 ## Installation
 
-Install the Debian packages for the products you want.
+You can either install it directly or use Docker/Kubernetes to run the exporter.
 
-CentOS packages are TODO.
+See Dockerfile for instructions on what dependencies are needed.
+Run `make install` to install.
 
-## Building Debian packages
+To deploy to Kubernetes, upload the Docker image to a repository and modify
+`snmpexporterd.k8s.yaml`.
 
-Build the packages
+## Running
 
-    make deb
+There are two applications in snmpexporter:
+
+ * snmpexporterd.py
+ 
+This is an API server capable of doing scrapes via HTTP requests.
+This is an excellent way to integrate SNMP into Prometheus.
+ 
+ * snmpexport.py
+
+This is a utility script to test your configuration or debug SNMP polling
+behaviour. Run it to execute a one-off scraping.
