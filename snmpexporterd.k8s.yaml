@@ -5,7 +5,7 @@ metadata:
     app: snmpexporterd
   name: snmpexporterd
 spec:
-  replicas: 1
+  replicas: 10
   selector:
     matchLabels:
       app: snmpexporterd
@@ -20,6 +20,10 @@ spec:
         app: snmpexporterd
       name: snmpexporterd
     spec:
+      nodeSelector:
+        # TODO(bluecmd): As we have the NAT asymetry problem, stick this to
+        # a single machine for now.
+        kubernetes.io/hostname: cloud0
       containers:
       - image: val.tech.dreamhack.se/snmpexporterd
         imagePullPolicy: Always
