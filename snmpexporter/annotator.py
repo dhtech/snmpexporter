@@ -57,6 +57,8 @@ class Annotator(object):
     split_oid_map = collections.defaultdict(dict)
     for (oid, ctxt), result in results.items():
       name, _ = self.mibcache[oid]
+      if '.' not in name:
+        continue
       _, index = name.split('.', 1)
       key = oid[:-(len(index))]
       split_oid_map[(key, ctxt)][index] = result.value
@@ -86,7 +88,7 @@ class Annotator(object):
           oid, index, ctxt, annotation_map, split_oid_map, results))
 
       # Handle labelification
-      if oid[:-len(index)] in labelification:
+      if oid[:-(len(index) if index else 0)] in labelification:
         # Skip empty strings or non-strings that are up for labelification
         if result.value == '' or result.type not in self.LABEL_TYPES:
           continue
