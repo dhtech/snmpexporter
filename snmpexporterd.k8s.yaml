@@ -31,6 +31,17 @@ spec:
         volumeMounts:
           - name: config-volume
             mountPath: /etc/snmpexporter
+        resources:
+              requests:
+                memory: "1Gi"
+              limits:
+                memory: "1.2Gi"
+        livenessProbe:
+          httpGet:
+            path: /healthy
+            port: 9190
+          initialDelaySeconds: 15
+          timeoutSeconds: 30
       dnsPolicy: Default
       imagePullSecrets:
       - name: tech-registry-key
