@@ -3,6 +3,7 @@ import argparse
 from concurrent import futures
 import functools
 import logging
+import objgraph
 import sys
 import threading
 import yaml
@@ -19,6 +20,11 @@ from twisted.web import server, resource
 # thread-local, but why not.
 tls = threading.local()
 tls.snmpimpl = None
+
+
+# Used to test health of the executors
+def do_nothing():
+  pass
 
 
 def poll(config, host, layer):
@@ -128,13 +134,53 @@ class PollerResource(resource.Resource):
       return self.probe(request)
     elif path == '/healthy':
       return self.healthy(request)
+    elif path == '/objects':
+      return self.objects(request)
     else:
       logging.info('Not found: %s', path)
       request.setResponseCode(404)
       return '404 Not Found'.encode()
 
+  def objects(self, request):
+    types = objgraph.most_common_types(limit=1000)
+    request.write('# HELP objgraph_objects active objects in memory'.encode())
+    request.write('# TYPE objgraph_objects gauge'.encode())
+    for name, count in types:
+      request.write(
+              ('objgraph_objects{name="%s"} %s\n' % (name, count)).encode())
+    return bytes()
+
+  def _annotator_executor_healthy(self, request, completed_f):
+    if completed_f.exception() or completed_f.cancelled():
+      request.setResponseCode(500, message=(
+          'Annotator health failed: %s' % repr(
+              completed_f.exception())).encode())
+      request.finish()
+      return
+    request.write('I am healthy'.encode())
+    request.finish()
+
+  def _poller_executor_healthy(self, request, completed_f):
+    if completed_f.exception() or completed_f.cancelled():
+      request.setResponseCode(500, message=(
+          'Poller health failed: %s' % repr(completed_f.exception())).encode())
+      request.finish()
+      return
+    f = self.annotator_executor.submit(do_nothing)
+    f.add_done_callback(
+            lambda f: reactor.callFromThread(
+                self._annotator_executor_healthy, request, f))
+
   def healthy(self, request):
-    return '200 I am healthy'.encode()
+    # Send the healthy request through the pipeline executors to see
+    # that everything works.
+    f = self.poller_executor.submit(do_nothing)
+    logging.debug('Starting healthy poll')
+    f.add_done_callback(
+            lambda f: reactor.callFromThread(
+                self._poller_executor_healthy, request, f))
+    request.notifyFinish().addErrback(self._response_failed, f)
+    return server.NOT_DONE_YET
 
   def probe(self, request):
     layer = request.args.get('layer'.encode(), [None])[0]
