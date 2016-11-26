@@ -14,7 +14,7 @@ before_install:
 
 install:
   - sudo pip3 install coveralls
-  - sudo ln -sf /usr/local/bin/coverage3 /usr/local/bin/python3-coverage
+  - sudo ln -sf /usr/bin/coverage3 /usr/bin/python3-coverage
 
 script:
   - make
