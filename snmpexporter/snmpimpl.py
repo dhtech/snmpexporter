@@ -102,7 +102,7 @@ class NetsnmpImpl(SnmpImpl):
         continue
       if sess.ErrorStr != '':
         raise SnmpError('SNMP error while walking host %s: %s' % (
-          self.host, sess.ErrorStr))
+          target.host, sess.ErrorStr))
 
       for result in var_list:
         currentoid = '%s.%s' % (result.tag, int(result.iid))
@@ -155,5 +155,5 @@ class NetsnmpImpl(SnmpImpl):
       vlans = {int(x.split('.')[-1]) for x in oids}
       return vlans
     except ValueError as e:
-      logging.info('ValueError while parsing VLAN for %s: %s', self.host, e)
+      logging.info('ValueError while parsing VLAN for %s: %s', target.host, e)
       return []
