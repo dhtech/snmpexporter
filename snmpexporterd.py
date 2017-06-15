@@ -52,7 +52,7 @@ def poll(config, host, layer):
 
     return target, data
   except:
-    logger.exception('Poll exception')
+    logging.exception('Poll exception')
     raise
 
 
@@ -75,7 +75,7 @@ def annotate(config, resolver, f):
     exporter = snmpexporter.prometheus.Exporter()
     return exporter.export(target, result)
   except:
-    logger.exception('Annotate exception')
+    logging.exception('Annotate exception')
     raise
 
 
