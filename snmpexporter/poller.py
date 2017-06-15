@@ -64,13 +64,13 @@ class Poller(object):
       model = self.snmpimpl.model(target)
     except snmp.TimeoutError as e:
       logging.exception('Could not determine model of %s:', target.host)
-      return None, 0, 1
+      raise
     except snmp.Error as e:
       logging.exception('Could not determine model of %s:', target.host)
-      return None, 1, 0
+      raise
     if not model:
       logging.error('Could not determine model of %s')
-      return None, 1, 0
+      raise
 
     logging.debug('Object %s is model %s', target.host, model)
     global_oids, vlan_oids, options = self.assemble_walk_parameters(
