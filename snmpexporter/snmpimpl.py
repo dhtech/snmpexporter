@@ -10,16 +10,6 @@ class Error(Exception):
   pass
 
 
-class SnmpError(Error):
-  """A general SNMP error happened when talking to the device."""
-  pass
-
-
-class TimeoutError(Error):
-  """A timeout happened when talking to the device."""
-  pass
-
-
 class SnmpImpl(object):
 
   def model(self):
@@ -101,7 +91,7 @@ class NetsnmpImpl(SnmpImpl):
           nextoid, target.host, target.max_size))
         continue
       if sess.ErrorStr != '':
-        raise SnmpError('SNMP error while walking host %s: %s' % (
+        raise snmp.SnmpError('SNMP error while walking host %s: %s' % (
           target.host, sess.ErrorStr))
 
       for result in var_list:
@@ -128,7 +118,7 @@ class NetsnmpImpl(SnmpImpl):
     if sess.ErrorStr != '':
       if sess.ErrorStr == 'Timeout':
         raise TimeoutError('Timeout getting %s from %s' % (oid, target.host))
-      raise SnmpError('SNMP error while talking to host %s: %s' % (
+      raise snmp.SnmpError('SNMP error while talking to host %s: %s' % (
         target.host, sess.ErrorStr))
 
     return {var.tag: snmp.ResultTuple(var.val.decode(), var.type)}
@@ -147,7 +137,7 @@ class NetsnmpImpl(SnmpImpl):
       value = list(model.values()).pop().value
       if value:
         return value
-    raise NoModelOid('No model OID contained a model')
+    raise snmp.NoModelOid('No model OID contained a model')
 
   def vlans(self, target):
     try:
