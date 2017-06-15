@@ -28,47 +28,55 @@ def do_nothing():
 
 
 def poll(config, host, layer):
-  if not tls.snmpimpl:
-    logging.debug('Initializing Net-SNMP implemention')
-    tls.snmpimpl = snmpexporter.snmpimpl.NetsnmpImpl()
+  try:
+    if not tls.snmpimpl:
+      logging.debug('Initializing Net-SNMP implemention')
+      tls.snmpimpl = snmpexporter.snmpimpl.NetsnmpImpl()
 
-  collections = config['collection']
-  overrides = config['override']
-  snmp_creds = config['snmp']
+    collections = config['collection']
+    overrides = config['override']
+    snmp_creds = config['snmp']
 
-  logging.debug('Constructing SNMP target')
-  target = snmpexporter.target.SnmpTarget(host, layer, snmp_creds)
+    logging.debug('Constructing SNMP target')
+    target = snmpexporter.target.SnmpTarget(host, layer, snmp_creds)
 
-  target.start('poll')
+    target.start('poll')
 
-  logging.debug('Creating SNMP poller')
-  poller = snmpexporter.poller.Poller(collections, overrides, tls.snmpimpl)
+    logging.debug('Creating SNMP poller')
+    poller = snmpexporter.poller.Poller(collections, overrides, tls.snmpimpl)
 
-  logging.debug('Starting poll')
-  data, timeouts, errors = poller.poll(target)
-  target.add_timeouts(timeouts)
-  target.add_errors(errors)
+    logging.debug('Starting poll')
+    data, timeouts, errors = poller.poll(target)
+    target.add_timeouts(timeouts)
+    target.add_errors(errors)
 
-  return target, data
+    return target, data
+  except:
+    logger.exception('Poll exception')
+    raise
 
 
 def annotate(config, resolver, f):
-  target, data = f
+  try:
+    target, data = f
 
-  annotator_config = config['annotator']
+    annotator_config = config['annotator']
 
-  target.start('annotate')
+    target.start('annotate')
 
-  logging.debug('Creating result annotator')
-  annotator = snmpexporter.annotator.Annotator(annotator_config, resolver)
+    logging.debug('Creating result annotator')
+    annotator = snmpexporter.annotator.Annotator(annotator_config, resolver)
 
-  logging.debug('Starting annotation')
-  result = annotator.annotate(data)
+    logging.debug('Starting annotation')
+    result = annotator.annotate(data)
 
-  target.done()
+    target.done()
 
-  exporter = snmpexporter.prometheus.Exporter()
-  return exporter.export(target, result)
+    exporter = snmpexporter.prometheus.Exporter()
+    return exporter.export(target, result)
+  except:
+    logger.exception('Annotate exception')
+    raise
 
 
 class PollerResource(resource.Resource):
