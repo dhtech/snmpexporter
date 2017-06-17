@@ -43,13 +43,19 @@ static PyObject *resolve(PyObject *self, PyObject *args) {
   if (tp->enums) {
     struct enum_list *ep = tp->enums;
     while (ep) {
-      PyDict_SetItem(enum_map, PyUnicode_FromFormat("%d", ep->value),
-          PyUnicode_FromString(ep->label));
+      PyObject *key = PyUnicode_FromFormat("%d", ep->value);
+      PyObject *val = PyUnicode_FromString(ep->label);
+      PyDict_SetItem(enum_map, key, val);
+      Py_DECREF(key);
+      Py_DECREF(val);
       ep = ep->next;
     }
   }
 
-  return Py_BuildValue("sO", output, enum_map);
+  PyObject* ret = Py_BuildValue("sO", output, enum_map);
+  Py_DECREF(output);
+  Py_DECREF(enum_map);
+  return ret;
 }
 
 static int module_traverse(PyObject *m, visitproc visit, void *arg) {
