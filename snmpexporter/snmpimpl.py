@@ -58,6 +58,9 @@ class NetsnmpImpl(SnmpImpl):
           Version=target.version, DestHost=target.full_host,
           Community=community, UseNumeric=1, Timeout=timeout,
           Retries=retries)
+    except self.netsnmp.Error as e:
+      raise snmp.SnmpError('SNMP error while connecting to host %s: %s' % (
+          target.host, e.args[0]))
     finally:
       if self.first_load:
         # Restore stderr
