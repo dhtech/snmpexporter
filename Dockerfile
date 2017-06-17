@@ -11,7 +11,10 @@ RUN (mkdir -p /var/lib/mibs/std /tmp/librenms; cd /tmp/librenms; \
   unzip master.zip && mv librenms-master/mibs/* /var/lib/mibs/std/) && \
   rm -r /tmp/librenms
 
-ADD etc/snmp.conf /etc/snmp/
+RUN (mkdir -p /etc/snmp/; \
+  echo "mibs ALL" >  /etc/snmp/snmp.conf; \
+  echo -n "mibdirs " >> /etc/snmp/snmp.conf; \
+  find /var/lib/mibs/ -type d | xargs | sed 's/ /:/g' >> /etc/snmp/snmp.conf)
 
 ADD . /tmp/snmpexporter
 RUN make all install -C /tmp/snmpexporter && ls -laR /opt
