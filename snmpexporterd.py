@@ -138,6 +138,7 @@ class PollerResource(resource.Resource):
 
   def render_GET(self, request):
     path = request.path.decode()
+    request.setHeader("Content-Type", "text/plain; charset=UTF-8")
     if path == '/probe':
       return self.probe(request)
     elif path == '/healthy':
