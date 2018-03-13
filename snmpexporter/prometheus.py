@@ -10,7 +10,7 @@ class Exporter(object):
 
   NUMERIC_TYPES = set([
     'COUNTER', 'COUNTER64', 'INTEGER', 'INTEGER32', 'TICKS',
-    'GAUGE', 'ANNOTATED'])
+    'GAUGE', 'ANNOTATED', 'UNSIGNED32'])
 
   def export(self, target, results):
     grouped_metrics = collections.defaultdict(dict)
