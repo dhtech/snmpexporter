@@ -5,7 +5,10 @@ After=network.target
 [Service]
 Type=simple
 User=prober
-ExecStart=/opt/snmpexporter/snmpexporterd.py --config /etc/snmpexporter/snmpexporter.yaml
+ExecStart=/opt/snmpexporter/snmpexporterd.py \
+  --config /etc/snmpexporter/snmpexporter.yaml \
+  --poller-pool=500 \
+  --annotator-pool=15
 
 [Install]
 WantedBy=multi-user.target
