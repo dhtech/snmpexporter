@@ -1,16 +1,5 @@
 snmp:
-  services:
-    auth: my_sha
-    auth_proto: SHA
-    port: 161
-    priv: my_aes
-    priv_proto: AES
-    sec_level: authPriv
-    user: my_user
-    version: 3
-  wifi:
-    community: public
-    version: 2
+  !include auth.yaml
 
 override:
   # bsnDot11EssNumberOfMobileStations is reported as a Counter

@@ -2,15 +2,14 @@
 import argparse
 import logging
 import sys
-import yaml
 
 import snmpexporter
+import snmpexporter.config
 import snmpexporter.prometheus
 
 
 def main(config_file, host, layer, annotate=True):
-  with open(config_file, 'r') as f:
-    config = yaml.safe_load(f.read())
+  config = snmpexporter.config.load(config_file)
   collections = config['collection']
   overrides = config['override']
   snmp_creds = config['snmp']

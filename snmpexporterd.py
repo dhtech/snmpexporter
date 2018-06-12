@@ -6,9 +6,9 @@ import logging
 import objgraph
 import sys
 import threading
-import yaml
 
 import snmpexporter
+import snmpexporter.config
 import snmpexporter.prometheus
 
 from twisted.internet import reactor, task, endpoints
@@ -202,8 +202,7 @@ class PollerResource(resource.Resource):
     layer = layer.decode()
     target = target.decode()
 
-    with open(self.config_file, 'r') as f:
-      config = yaml.safe_load(f.read())
+    config = snmpexporter.config.load(self.config_file)
 
     f = self.poller_executor.submit(poll, config, target, layer)
     f.add_done_callback(
