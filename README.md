@@ -29,7 +29,24 @@ minor annotation features that might be useful, but nothing extraordinary.
 
 You can either install it directly or use Docker/Kubernetes to run the exporter.
 
-See Dockerfile for instructions on what dependencies are needed.
+See Dockerfile for instructions on what dependencies are needed. Something like this (may not be up to date, again - see Dockerfile):
+
+```
+sudo apt-get install libsnmp-dev python3-distutils python3-dev python3-coverage python3-yaml python3-objgraph python3-twisted python3-pip python3-setuptools python3-wheel
+pip3 install python3-netsnmp
+
+mkdir -p /var/lib/mibs/std /tmp/librenms
+cd /tmp/librenms
+wget https://github.com/librenms/librenms/archive/master.zip
+unzip master.zip
+mv librenms-master/mibs/* /var/lib/mibs/std/
+
+cp etc/snmp.conf /etc/snmp/
+
+make
+make install
+```
+
 Run `make install` to install.
 
 To deploy to Kubernetes, upload the Docker image to a repository and modify
