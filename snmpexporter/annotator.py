@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import binascii
 import collections
+import datetime
 import logging
 
 from snmpexporter import snmp
@@ -101,8 +102,6 @@ class Annotator(object):
         labels['value'] = self.string_to_label_value(bytes_value)
         labels['hex'] = binascii.hexlify(bytes_value).decode()
         # See DateAndTime in snmpv2-TC
-        print(bytes_value)
-        print(len(bytes_value))
         if len(bytes_value) == 11:
           labels['astime'] = self.byte_to_time(bytes_value)
         result = snmp.ResultTuple('NaN', 'ANNOTATED')
@@ -214,7 +213,7 @@ class Annotator(object):
       utc_hour=hour-int(bytes_value[9])
       utc_minutes=minutes-int(bytes_value[10])
 
-    ct = datetime(year,month,day,utc_hour,utc_minutes,seconds,
-            tzinfo=timezone.utc).timestamp()
+    ct = datetime.datetime(year,month,day,utc_hour,utc_minutes,seconds,
+            tzinfo=datetime.timezone.utc).timestamp()
 
-    return ct
+    return str(ct)
