@@ -380,6 +380,27 @@ annotator:
       {'enum': 'enumValue'}))
     self.runTest(expected, result, config)
 
+  def testByteToTime(self):
+    """Testing conversion of byte array to unixtime."""
+    config = """
+annotator:
+  labelify:
+    - .10.2
+"""
+    time_data = '\x07\xE2\x0B\x1D\x0E\x11\x0B\x00+\x00\x00'
+
+    result = {
+      ('.10.2.2', None): snmpResult(time_data),
+    }
+    identities = {
+      ('.10.2.2', None): snmpResult('NaN', 'ANNOTATED'),
+    }
+    expected = self.newExpectedFromResult(result)
+    expected.update(self.createResultEntry(('.10.2.2', None), identities,
+      {'value': '+', 'hex': binascii.hexlify(time_data.encode()).decode(),
+          'astime': '1543501031.0'}))
+    self.runTest(expected, result, config)
+
 
 def main():
   unittest.main()

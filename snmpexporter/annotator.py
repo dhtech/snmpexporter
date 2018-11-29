@@ -101,8 +101,10 @@ class Annotator(object):
         labels['value'] = self.string_to_label_value(bytes_value)
         labels['hex'] = binascii.hexlify(bytes_value).decode()
         # See DateAndTime in snmpv2-TC
+        print(bytes_value)
+        print(len(bytes_value))
         if len(bytes_value) == 11:
-          labels['astime'] = byte_to_time(bytes_value)
+          labels['astime'] = self.byte_to_time(bytes_value)
         result = snmp.ResultTuple('NaN', 'ANNOTATED')
 
       # Do something almost like labelification for enums
@@ -197,7 +199,7 @@ class Annotator(object):
     value = [x for x in value if x in self.ALLOWED_CHARACTERS.encode()]
     return bytes(value).decode().strip()
 
-  def byte_to_time(bytes_value):
+  def byte_to_time(self, bytes_value):
     year = int(bytes_value[0])*256+int(bytes_value[1])
     month = int(bytes_value[2])
     day = int(bytes_value[3])
@@ -206,12 +208,13 @@ class Annotator(object):
     seconds = int(bytes_value[6])
 
     if chr(bytes_value[8]) == '+':
-        utc_hour=hour+int(bytes_value[9])
-        utc_minutes=minutes+int(bytes_value[10])
+      utc_hour=hour+int(bytes_value[9])
+      utc_minutes=minutes+int(bytes_value[10])
     else:
-        utc_hour=hour-int(bytes_value[9])
-        utc_minutes=minutes-int(bytes_value[10])
+      utc_hour=hour-int(bytes_value[9])
+      utc_minutes=minutes-int(bytes_value[10])
 
-    ct = datetime(year,month,day,utc_hour,utc_minutes,seconds, tzinfo=timezone.utc).ct = ct.timestamp()
+    ct = datetime(year,month,day,utc_hour,utc_minutes,seconds,
+            tzinfo=timezone.utc).timestamp()
 
     return ct
