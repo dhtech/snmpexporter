@@ -46,16 +46,18 @@ class Annotator(object):
       [x + '.' for x in self.config.get('labelify', [])])
 
     # Pre-fill the OID/Enum cache to allow annotations to get enum values
+    cached_items = []
     for (oid, ctxt), result in results.items():
       resolve = self.mibresolver.resolve(oid)
-      self.mibcache[oid] = resolve
       if resolve is None:
         logging.warning('Failed to look up OID %s, ignoring', oid)
         continue
+      self.mibcache[oid] = resolve
+      cached_items.append(((oid, ctxt), result))
 
     # Calculate annotator map
     split_oid_map = collections.defaultdict(dict)
-    for (oid, ctxt), result in results.items():
+    for (oid, ctxt), result in cached_items:
       name, _ = self.mibcache[oid]
       if '.' not in name:
         continue
@@ -64,7 +66,7 @@ class Annotator(object):
       split_oid_map[(key, ctxt)][index] = result.value
 
     annotated_results = {}
-    for (oid, ctxt), result in results.items():
+    for (oid, ctxt), result in cached_items:
       labels = {}
       vlan = None
 
