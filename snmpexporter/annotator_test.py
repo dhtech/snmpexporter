@@ -34,13 +34,15 @@ class MockMibResolver(object):
       if oid.startswith(key + '.'):
         break
     else:
-      raise Exception('No MIB RESOLVER defined')
+      return None, None, None, None
 
     index = oid[len(key)+1:]
     return ('DUMMY-MIB', MIB_RESOLVER[key], index, ENUMS[key])
 
   def resolve(self, oid):
     mib, obj, index, enum = self.resolve_for_testing(oid)
+    if mib is None:
+      return None
     return '%s::%s.%s' % (mib, obj, index), enum
 
 
@@ -121,6 +123,7 @@ annotator:
       ('.1.2.3.1', None): snmpResult(1337),
       ('.1.2.3.3', None): snmpResult(1338),
       ('.1.2.4.1', None): snmpResult(1339),
+      ('.2.2.4.1', None): snmpResult(1339),
       ('.1.2.4.3.2', None): snmpResult(1340),
       ('.1.2.4.3.3', None): snmpResult(1341),
       ('.1.2.4.1', '100'): snmpResult(1339),
@@ -131,6 +134,9 @@ annotator:
       ('.10.2.3.2', None): snmpResult('alias2'),
     }
     expected = self.newExpectedFromResult(result)
+    # Remove the .2.2.4.1 entry as it is expected to be ignored due to
+    # resolve failure
+    del expected[('.2.2.4.1', None)]
     expected.update(self.createResultEntry(('.1.2.3.1', None), result,
       {'interface': 'interface1', 'alias': 'alias1'}))
     expected.update(self.createResultEntry(('.1.2.4.1', None), result,
