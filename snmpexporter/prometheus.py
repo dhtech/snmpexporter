@@ -1,14 +1,10 @@
 import collections
+import datetime
 import logging
 
 
 Metric = collections.namedtuple(
   'Metrics', ('name', 'type', 'labels', 'value'))
-
-
-CONVERTERS = {
-  'DateTime': lambda x: 123
-}
 
 class Exporter(object):
 
@@ -100,3 +96,30 @@ class Exporter(object):
       value = converter(metric.value) if converter is not None else metric.value
       out.append('{0} {1}'.format(instance, value))
     return out
+
+
+def bytes_to_datetime(b):
+    if len(b) != 11:
+      return float('nan')
+    year = int(b[0])*256+int(b[1])
+    month = int(b[2])
+    day = int(b[3])
+    hour = int(b[4])
+    minutes = int(b[5])
+    seconds = int(b[6])
+
+    if chr(b[8]) == '+':
+      utc_hour=hour+int(b[9])
+      utc_minutes=minutes+int(b[10])
+    else:
+      utc_hour=hour-int(b[9])
+      utc_minutes=minutes-int(b[10])
+
+    ct = datetime.datetime(year,month,day,utc_hour,utc_minutes,seconds,
+            tzinfo=datetime.timezone.utc).timestamp()
+    return ct
+
+
+CONVERTERS = {
+  'DateTime': bytes_to_datetime,
+}

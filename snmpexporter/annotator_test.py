@@ -383,8 +383,8 @@ annotator:
       {'enum': 'enumValue'}))
     self.runTest(expected, result, config)
 
-  def testByteToTime(self):
-    """Testing conversion of byte array to unixtime."""
+  def testBytes(self):
+    """Testing handling of byte array."""
     config = """
 annotator:
   labelify:
@@ -400,8 +400,7 @@ annotator:
     }
     expected = self.newExpectedFromResult(result)
     expected.update(self.createResultEntry(('.10.2.2', None), identities,
-      {'value': '+', 'hex': binascii.hexlify(time_data).decode(),
-          'astime': '1543501031.0'}))
+      {'value': '+', 'hex': binascii.hexlify(time_data).decode()}))
     self.runTest(expected, result, config)
 
 
