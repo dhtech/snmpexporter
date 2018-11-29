@@ -99,7 +99,7 @@ class Annotator(object):
         labels['value'] = self.string_to_label_value(bytes_value)
         labels['hex'] = binascii.hexlify(bytes_value).decode()
         # See DateAndTime in snmpv2-TC
-        if bytes_value.length() == 11:
+        if len(bytes_value) == 11:
           labels['astime'] = byte_to_time(bytes_value)
         result = snmp.ResultTuple('NaN', 'ANNOTATED')
 
@@ -195,7 +195,7 @@ class Annotator(object):
     value = [x for x in value if x in self.ALLOWED_CHARACTERS.encode()]
     return bytes(value).decode().strip()
 
-  def byte_to_time(bytes_value)
+  def byte_to_time(bytes_value):
     year = int(bytes_value[0])*256+int(bytes_value[1])
     month = int(bytes_value[2])
     day = int(bytes_value[3])
