@@ -193,4 +193,3 @@ class Annotator(object):
   def string_to_label_value(self, value):
     value = [x for x in value if x in self.ALLOWED_CHARACTERS.encode()]
     return bytes(value).decode().strip()
-

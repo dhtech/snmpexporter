@@ -14,6 +14,7 @@ def main(config_file, host, layer, annotate=True):
   overrides = config['override']
   snmp_creds = config['snmp']
   annotator_config = config['annotator']
+  exporter_config = config['exporter']
 
   if not annotate:
     logging.debug('Will not annotate')
@@ -51,7 +52,7 @@ def main(config_file, host, layer, annotate=True):
 
   target.done()
 
-  exporter = snmpexporter.prometheus.Exporter()
+  exporter = snmpexporter.prometheus.Exporter(exporter_config)
   for x in exporter.export(target, data):
     print(x)
 

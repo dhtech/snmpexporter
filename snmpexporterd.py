@@ -61,6 +61,7 @@ def annotate(config, resolver, f):
     target, data = f
 
     annotator_config = config['annotator']
+    exporter_config = config['exporter']
 
     target.start('annotate')
 
@@ -72,7 +73,7 @@ def annotate(config, resolver, f):
 
     target.done()
 
-    exporter = snmpexporter.prometheus.Exporter()
+    exporter = snmpexporter.prometheus.Exporter(exporter_config)
     return exporter.export(target, result)
   except:
     logging.exception('Annotate exception')

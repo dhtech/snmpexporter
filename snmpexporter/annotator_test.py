@@ -24,7 +24,10 @@ def snmpResult(x, type=None):
   # We don't care about the type in the annotator
   if type is None:
     type = 'INTEGER' if isinstance(x, int) else 'OCTETSTR'
-  return snmp.ResultTuple(str(x), type)
+  if isinstance(x, bytes):
+    return snmp.ResultTuple(x, type)
+  else:
+    return snmp.ResultTuple(str(x), type)
 
 
 class MockMibResolver(object):
@@ -378,6 +381,26 @@ annotator:
       {'thing': 'enumValue'}))
     expected.update(self.createResultEntry(('.10.3.1', None), result,
       {'enum': 'enumValue'}))
+    self.runTest(expected, result, config)
+
+  def testBytes(self):
+    """Testing handling of byte array."""
+    config = """
+annotator:
+  labelify:
+    - .10.2
+"""
+    time_data = b'\x07\xE2\x0B\x1D\x0E\x11\x0B\x00+\x00\x00'
+
+    result = {
+      ('.10.2.2', None): snmpResult(time_data),
+    }
+    identities = {
+      ('.10.2.2', None): snmpResult('NaN', 'ANNOTATED'),
+    }
+    expected = self.newExpectedFromResult(result)
+    expected.update(self.createResultEntry(('.10.2.2', None), identities,
+      {'value': '+', 'hex': binascii.hexlify(time_data).decode()}))
     self.runTest(expected, result, config)
 
 

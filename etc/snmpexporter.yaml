@@ -110,6 +110,10 @@ annotator:
       with:
         name: .1.3.6.1.4.1.12356.101.4.3.2.1.2  # fgHwSensorEntName
 
+exporter:
+  convert:
+    csyClockDateAndTime: DateTime
+
 collection:
   Default OIDs:
     models:
