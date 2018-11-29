@@ -1,9 +1,13 @@
 snmp:
-  !include auth.yaml
+  !include /etc/snmpexporter/auth.yaml
 
 override:
   # bsnDot11EssNumberOfMobileStations is reported as a Counter
   .1.3.6.1.4.1.14179.2.1.1.1.38: INTEGER
+
+exporter:
+  convert:
+    csyClockDateAndTime: DateTime
 
 annotator:
 
@@ -110,10 +114,6 @@ annotator:
       with:
         name: .1.3.6.1.4.1.12356.101.4.3.2.1.2  # fgHwSensorEntName
 
-exporter:
-  convert:
-    csyClockDateAndTime: DateTime
-
 collection:
   Default OIDs:
     models:
@@ -129,120 +129,4 @@ collection:
       - ^AIR-CT.*
       - .*ASR9K.*
     oids:
-      - .1.3.6.1.2.1.2.2.1.2        # ifDescr
-      - .1.3.6.1.2.1.2.2.1.7        # ifAdminStatus
-      - .1.3.6.1.2.1.2.2.1.8        # ifOperStatus
-      - .1.3.6.1.2.1.2.2.1.14       # ifInErrors
-      - .1.3.6.1.2.1.2.2.1.20       # ifOutErrors
-      - .1.3.6.1.2.1.31.1.1.1.6     # ifHCInOctets
-      - .1.3.6.1.2.1.31.1.1.1.10    # ifHCOutOctets
-      - .1.3.6.1.2.1.31.1.1.1.15    # ifHighSpeed
-      - .1.3.6.1.2.1.31.1.1.1.18    # ifAlias
-      - .1.3.6.1.2.1.47.1.1.1.1.9   # entPhysicalFirmwareRev
-      - .1.3.6.1.4.1.9.2.1          # lcpu
-      - .1.3.6.1.4.1.9.9.46.1.3.1.1.2  # vtpVlanState
-      - .1.3.6.1.4.1.9.9.46.1.6.1.1.14  # vlanTrunkPortDynamicStatus
-      - .1.3.6.1.4.1.9.9.87.1.4.1.1.32 # c2900PortDuplexStatus
-      - .1.3.6.1.4.1.9.9.109.1.1.1.1  # cisco CPU
-
-  Cisco Dist Switch:
-    models:
-      - ^WS-C
-      - ^N.K-
-      - .*ASR9K.*
-    layers:
-      - dist
-      - core
-    oids:
-      - .1.3.6.1.2.1.2.2              # ifTable
-      - .1.3.6.1.2.1.31.1.1           # ifXEntry
-    # Warning: these are expensive on ASR, do not add new ones without
-    # thinking it throgh and watching the collection latency
-      - .1.3.6.1.2.1.47.1.1.1.1.11    # entPhysicalSerialNum
-      - .1.3.6.1.2.1.47.1.1.1.1.13    # entPhysicalModelName
-      - .1.3.6.1.2.1.47.1.1.1.1.2     # entPhysicalDesc
-      - .1.3.6.1.2.1.47.1.1.1.1.4     # entPhysicalContainedIn
-      - .1.3.6.1.2.1.47.1.1.1.1.9     # entPhysicalFirmwareRev
-      - .1.3.6.1.4.1.9.2.1            # lcpu
-      - .1.3.6.1.4.1.9.9.23           # ciscoCdpMIB
-    # Warning: these are expensive on ASR, do not add new ones without
-    # thinking it throgh and watching the collection latency
-      - .1.3.6.1.4.1.9.9.91.1.1.1.1.1 # entSensorType
-      - .1.3.6.1.4.1.9.9.91.1.1.1.1.2 # entSensorScale
-      - .1.3.6.1.4.1.9.9.91.1.1.1.1.4 # entSensorValue
-      - .1.3.6.1.4.1.9.9.380.1.1      # cdsGlobal
-      - .1.3.6.1.4.1.9.9.548.1.3.1    # cErrDisableIfStatusTable
-
-  Cisco WLC:
-    models:
-      - ^AIR-CT.*
-    layers:
-      - wifi
-    oids:
-      - .1.3.6.1.2.1.31.1.1            # ifXEntry
-      - .1.3.6.1.2.1.47.1.1.1.1        # Inventory (Versions, Assets, Transceivers)
-      - .1.3.6.1.4.1.14179.2.1.1.1.2   # bsnDot11EssSsid
-      - .1.3.6.1.4.1.14179.2.1.1.1.38  # bsnDot11EssNumberOfMobileStations
-      - .1.3.6.1.4.1.14179.2.2.1       # bsnAPTable
-      - .1.3.6.1.4.1.14179.2.2.2       # bsnAPIfTable
-      - .1.3.6.1.4.1.9.9.23            # ciscoCdpMIB
-      - .1.3.6.1.4.1.9.9.513.1.1.1     # cLApTable
-      - .1.3.6.1.4.1.9.9.513.1.2.2     # cLApEthernetIfTable
-      - .1.3.6.1.4.1.9.9.523.1.5.1.0   # ciscoLwappClRoamMIBObjects
-
-  Cisco Switch - VLAN aware:
-    # DANGER! This collection type (vlan_aware) takes a looong time on switches
-    # with a lot of VLANs. Please be careful and monitor SNMP collection latency
-    vlan_aware: yes
-    layers:
-      - access
-    models:
-      - ^WS-C
-    oids:
-      - .1.3.6.1.2.1.17.1.4.1.2     # dot1dBasePortIfIndex (port -> ifindex)
-      - .1.3.6.1.2.1.17.2.15.1.3    # dot1dStpPortState
-
-  FortiGate:
-    layers:
-      - firewall
-    models:
-      - ^FGT
-    options:
-      # Some kind of UDP fragmentation issue with the Fortigates maybe.
-      # Using the default 256 causes SNMP to lock up on the device for a
-      # while.
-      max-size: 1
-    oids:
-      - .1.3.6.1.4.1.12356.101.4   # fgSystem
-      - .1.3.6.1.4.1.12356.101.13  # fgHighAvailability
-
-  HP Onboard Administrator:
-    layers:
-      - services
-    models:
-      - ^HP Onboard Administrator
-    oids:
-      - .1.3.6.1.4.1.232.22 # cpqRackInfo
-
-  ASR9K:
-    models:
-      - .*ASR9K.*
-    layers:
-      - core
-    oids:
-      - .1.3.6.1.4.1.9.9.176         # ciscoRFMIB
-
-  Juniper Switch:
-    models:
-      - ^710-.*
-    oids:
-      - .1.3.6.1.2.1.2.2              # ifTable
-      - .1.3.6.1.2.1.31.1.1           # ifXEntry
-    # Warning: these are expensive, do not add new ones without
-    # thinking it throgh and watching the collection latency
-      - .1.3.6.1.2.1.47.1.1.1.1.11    # entPhysicalSerialNum
-      - .1.3.6.1.2.1.47.1.1.1.1.13    # entPhysicalModelName
-      - .1.3.6.1.2.1.47.1.1.1.1.2     # entPhysicalDesc
-      - .1.3.6.1.2.1.47.1.1.1.1.4     # entPhysicalContainedIn
-      - .1.3.6.1.2.1.47.1.1.1.1.9     # entPhysicalFirmwareRev
-      - .1.3.6.1.4.1.2636.3.1.13.1    # jnxOperatingEntry
+      - .1.3.6.1.4.1.9.9.131.1.1 # csyClock
