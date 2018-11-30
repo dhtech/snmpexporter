@@ -190,6 +190,7 @@ collection:
       - .1.3.6.1.4.1.9.9.513.1.1.1     # cLApTable
       - .1.3.6.1.4.1.9.9.513.1.2.2     # cLApEthernetIfTable
       - .1.3.6.1.4.1.9.9.523.1.5.1.0   # ciscoLwappClRoamMIBObjects
+      - .1.3.6.1.4.1.9.9.198888        # ciscoLwappHaMIB
 
   Cisco Switch - VLAN aware:
     # DANGER! This collection type (vlan_aware) takes a looong time on switches
