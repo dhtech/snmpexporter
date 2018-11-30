@@ -251,8 +251,7 @@ collection:
 
   Juniper switches:
     models:
-      - .*ex3400.*
-      - .*ex4600.*
+      - .*Juniper.*ex.*
     oids:
       - .1.3.6.1.2.1.2.2              # ifTable
       - .1.3.6.1.2.1.10.7.2.1.19      # dot3StatsDuplexStatus
