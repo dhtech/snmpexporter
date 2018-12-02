@@ -280,10 +280,8 @@ collection:
       - .1.3.6.1.2.1.47.1.1.1.1.2             # entPhysicalDesc
       - .1.3.6.1.2.1.47.1.1.1.1.4             # entPhysicalContainedIn
       - .1.3.6.1.2.1.47.1.1.1.1.9             # entPhysicalFirmwareRev
-      - .1.3.6.1.4.1.2636.3.39.1.12.1.1.1.6I  # jnxJsSPUMonitoringCurrentFlowSession
-      - .1.3.6.1.4.1.2636.3.39.1.12.1.1.1.4I  # jnxJsSPUMonitoringCPUUsage
-      - .1.3.6.1.4.1.2636.3.1.13.1.11II       # jnxOperatingBuffer
-      - .1.3.6.1.4.1.2636.3.39.1.12.1.1.1.5I  # jnxJsSPUMonitoringMemoryUsage
+      - .1.3.6.1.4.1.2636.3.1.13              # jnxOperatingTable
+      - .1.3.6.1.4.1.2636.3.39.1.12.1         # jnxJsSPUMonitoringMIB
 
   SAN Switch:
     models:
