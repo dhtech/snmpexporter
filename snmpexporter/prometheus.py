@@ -21,12 +21,14 @@ class Exporter(object):
 
   def export(self, target, results):
     grouped_metrics = collections.defaultdict(dict)
+    cmetrics = 0
     for result in results.values():
       grouped_metrics[(result.mib, result.obj)][result.index] = (
           self._export(target, result))
     for (mib, obj), metrics in grouped_metrics.items():
       for x in self.format_metrics(mib, obj, metrics):
         yield x
+        cmetrics += 1
 
     # Export statistics
     yield '# HELP snmp_export_latency Latency breakdown for SNMP poll'
@@ -39,6 +41,9 @@ class Exporter(object):
     yield '# HELP snmp_export_timeouts Timeouts for SNMP poll'
     yield '# TYPE snmp_export_timeouts gauge'
     yield 'snmp_export_timeouts %s' % target.timeouts
+    yield '# HELP snmp_exported_metrics_count Number of exported SNMP metrics'
+    yield '# TYPE snmp_exported_metrics_count gauge'
+    yield 'snmp_exported_metrics_count %s' % cmetrics
 
   def _export(self, target, result):
     if result.data.type == 'COUNTER64' or result.data.type == 'COUNTER':
