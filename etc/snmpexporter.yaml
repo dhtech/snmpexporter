@@ -26,6 +26,7 @@ annotator:
     - .1.3.6.1.4.1.232.22.2.4.1.1.1.17 # cpqRackServerBladeProductId
     - .1.3.6.1.4.1.232.22.2.4.1.1.1.27 # cpqRackServerBladeSystemBIOSRevision
     - .1.3.6.1.4.1.232.22.2.4.1.1.1.30 # cpqRackServerBladeManagementDeviceFirmwareRevision
+    - .1.3.6.1.2.1.75.1.1.5.1.2 # fcFxPortName
 
   annotations:
     - annotate:
@@ -283,3 +284,12 @@ collection:
       - .1.3.6.1.4.1.2636.3.39.1.12.1.1.1.4I  # jnxJsSPUMonitoringCPUUsage
       - .1.3.6.1.4.1.2636.3.1.13.1.11II       # jnxOperatingBuffer
       - .1.3.6.1.4.1.2636.3.39.1.12.1.1.1.5I  # jnxJsSPUMonitoringMemoryUsage
+
+  SAN Switch:
+    models:
+      - .*40-1000165-13.*     # Brocade 300 SAN Switch
+    oids:
+      - .1.3.6.1.2.1.2.2      # ifTable
+      - .1.3.6.1.2.1.31.1.1   # ifXEntry
+      - .1.3.6.1.2.1.47.1.1.1 # entPhysicalTable
+      - .1.3.6.1.2.1.75.1     # fcFeMIBObjects
