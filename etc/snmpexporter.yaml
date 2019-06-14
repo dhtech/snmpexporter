@@ -147,11 +147,9 @@ collection:
       - .1.3.6.1.4.1.14823.2.2.1.5.3.1.1.1.27 # wlanAPFrameRetryErrorRate
       - .1.3.6.1.4.1.14823.2.2.1.5.3.2.3.1 # wlsxWlanStaDATypeStatsEntry
 
-
   Cisco Switch:
     models:
       - ^WS-C
-      - ^N.K-
       - ^AIR-CT.*
       - .*ASR9K.*
     oids:
@@ -175,7 +173,6 @@ collection:
   Cisco Dist Switch:
     models:
       - ^WS-C
-      - ^N.K-
       - .*ASR9K.*
     layers:
       - dist
@@ -200,6 +197,42 @@ collection:
       - .1.3.6.1.4.1.9.9.91.1.1.1.1.4 # entSensorValue
       - .1.3.6.1.4.1.9.9.380.1.1      # cdsGlobal
       - .1.3.6.1.4.1.9.9.548.1.3.1    # cErrDisableIfStatusTable
+
+  Cisco Nexus Switch:
+    # Nexus has a lot of weird things going with it w.r.t. SNMP
+    # and handles unknown OIDs quite poorly. Keep it seperate
+    # to only poll known good OIDs.
+    models:
+      - ^N.K-
+    layers:
+      - dist
+      - core
+    oids:
+      # Known slow oids:
+      # - .1.3.6.1.2.1.105.1.0 (pethObjects)
+      # - .1.3.6.1.4.1.9.2.1.0 (lcpu)
+      - .1.3.6.1.2.1.2.2               # ifTable
+      - .1.3.6.1.2.1.2.2.1.14          # ifInErrors
+      - .1.3.6.1.2.1.2.2.1.2           # ifDescr
+      - .1.3.6.1.2.1.2.2.1.20          # ifOutErrors
+      - .1.3.6.1.2.1.2.2.1.7           # ifAdminStatus
+      - .1.3.6.1.2.1.2.2.1.8           # ifOperStatus
+      - .1.3.6.1.2.1.31.1.1            # ifXEntry
+      - .1.3.6.1.2.1.31.1.1.1.10       # ifHCOutOctets
+      - .1.3.6.1.2.1.31.1.1.1.15       # ifHighSpeed
+      - .1.3.6.1.2.1.31.1.1.1.18       # ifAlias
+      - .1.3.6.1.2.1.31.1.1.1.6        # ifHCInOctets
+      - .1.3.6.1.2.1.47.1.1.1.1.11     # entPhysicalSerialNum
+      - .1.3.6.1.2.1.47.1.1.1.1.13     # entPhysicalModelName
+      - .1.3.6.1.2.1.47.1.1.1.1.2      # entPhysicalDesc
+      - .1.3.6.1.2.1.47.1.1.1.1.9      # entPhysicalFirmwareRev
+      - .1.3.6.1.4.1.9.9.109.1.1.1.1   # cisco CPU
+      - .1.3.6.1.4.1.9.9.131.1.1       # csyClock
+      - .1.3.6.1.4.1.9.9.380.1.1       # cdsGlobal
+      - .1.3.6.1.4.1.9.9.91.1.1.1.1.1  # entSensorType
+      - .1.3.6.1.4.1.9.9.91.1.1.1.1.2  # entSensorScale
+      - .1.3.6.1.4.1.9.9.91.1.1.1.1.4  # entSensorValue
+      - .1.3.6.1.4.1.9.9.548.1.3.1     # cErrDisableIfStatusTable
 
   Cisco WLC:
     models:
