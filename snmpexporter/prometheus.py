@@ -120,9 +120,12 @@ def bytes_to_datetime(b):
       utc_hour=hour-int(b[9])
       utc_minutes=minutes-int(b[10])
 
-    ct = datetime.datetime(year,month,day,utc_hour,utc_minutes,seconds,
+    try:
+        ct = datetime.datetime(year,month,day,utc_hour,utc_minutes,seconds,
             tzinfo=datetime.timezone.utc).timestamp()
-    return ct
+        return ct
+    except:
+        return float('nan')
 
 
 CONVERTERS = {
