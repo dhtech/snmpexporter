@@ -114,7 +114,9 @@ class NetsnmpImpl(SnmpImpl):
     return ret
 
   def get(self, target, oid):
-    sess = self._snmp_session(target, timeout=500000, retries=2)
+    # Nexus is quite slow sometimes to answer SNMP so use a high
+    # timeout on these initial requests before failing out
+    sess = self._snmp_session(target, timeout=5000000, retries=2)
     var = self.netsnmp.Varbind(oid)
     var_list = self.netsnmp.VarList(var)
     sess.get(var_list)
