@@ -320,6 +320,7 @@ collection:
   Juniper routers:
     models:
       - .*Juniper.*MX.*
+      # MX10003 reports it's midplane model number in a field checked first, instead of the actual chassi model number
       - ^750-.*
     oids:
       - .1.3.6.1.2.1.2.2              # ifTable
