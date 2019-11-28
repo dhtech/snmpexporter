@@ -369,6 +369,7 @@ collection:
     # Note: The "Description" field is used as model in FabricOS
     models:
       - .*BR300.*             # Brocade 300 SAN Switch
+      - .*DS-C9148.*          # Cisco MDS 9148
     oids:
       - .1.3.6.1.2.1.2.2      # ifTable
       - .1.3.6.1.2.1.31.1.1   # ifXEntry
