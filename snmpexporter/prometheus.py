@@ -95,7 +95,7 @@ class Exporter(object):
         # Just ignore this for now.
         continue
 
-      label_list = ['{0}="{1}"'.format(k, v.replace('"', '\\"'))
+      label_list = ['{0}="{1}"'.format(k, str(v).replace('"', '\\"'))
                     for k, v in metric.labels.items()]
       label_string = ','.join(label_list)
       instance = ''.join([obj, '{', label_string, '}'])
