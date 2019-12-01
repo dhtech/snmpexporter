@@ -138,7 +138,7 @@ class Annotator(object):
       if value is None:
         continue
 
-      labels[label] = value.replace('"', '\\"')
+      labels[label] = value
     return labels
 
   def jump_to_value(self, keys, oid, ctxt, index, split_oid_map, results):
