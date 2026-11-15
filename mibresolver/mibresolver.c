@@ -31,7 +31,7 @@ static PyObject *resolve(PyObject *self, PyObject *args) {
   }
 
   if (read_objid(input, name, &name_length) != 1) {
-    return Py_None;
+    Py_RETURN_NONE;
   }
 
   /* Resolve the OID */
@@ -39,8 +39,11 @@ static PyObject *resolve(PyObject *self, PyObject *args) {
 
   /* Resolve enum values if we have any */
   enum_map = PyDict_New();
+  if (enum_map == NULL) {
+    return NULL;
+  }
   tp = get_tree(name, name_length, get_tree_head());
-  if (tp->enums) {
+  if (tp && tp->enums) {
     struct enum_list *ep = tp->enums;
     while (ep) {
       PyObject *key = PyUnicode_FromFormat("%d", ep->value);
@@ -52,8 +55,8 @@ static PyObject *resolve(PyObject *self, PyObject *args) {
     }
   }
 
+  /* "O" takes its own reference to the map; output is a C buffer */
   PyObject* ret = Py_BuildValue("sO", output, enum_map);
-  Py_DECREF(output);
   Py_DECREF(enum_map);
   return ret;
 }

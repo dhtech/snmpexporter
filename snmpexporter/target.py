@@ -11,7 +11,7 @@ class LayerNotFound(Error):
 
 class SnmpTarget(object):
   def __init__(self, host, layer, config):
-    if config.get('snmp', layer) is None:
+    if layer not in config:
       raise LayerNotFound(layer)
     self._read_config(**config[layer])
     self.host = host

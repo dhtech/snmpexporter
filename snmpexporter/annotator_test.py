@@ -55,7 +55,7 @@ class TestAnnotator(unittest.TestCase):
     self.mibresolver = MockMibResolver()
 
   def runTest(self, expected_entries, result, cfg):
-    c = yaml.load(cfg) or {}
+    c = yaml.safe_load(cfg) or {}
     logic = annotator.Annotator(
       config=c.get('annotator', {}),
       mibresolver=self.mibresolver)
