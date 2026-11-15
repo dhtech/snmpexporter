@@ -228,6 +228,9 @@ if __name__ == '__main__':
           help='number of threads to use to annotate', default=5)
   parser.add_argument('--port', dest='port', type=int,
           help='port to listen to', default=9190)
+  parser.add_argument('--address', dest='address', type=str,
+          help='IPv4 address to listen on (default: every address)',
+          default='')
   args = parser.parse_args()
 
   # Logging setup
@@ -248,6 +251,7 @@ if __name__ == '__main__':
   factory = server.Site(pr)
 
   logging.debug('Starting web server on port %d', args.port)
-  endpoint = endpoints.TCP4ServerEndpoint(reactor, args.port)
+  endpoint = endpoints.TCP4ServerEndpoint(
+      reactor, args.port, interface=args.address)
   endpoint.listen(factory)
   reactor.run()

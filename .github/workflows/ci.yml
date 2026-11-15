@@ -1,0 +1,32 @@
+name: ci
+
+# Every push and pull request: the same build and trial a release gets
+# (.github/build.sh, then .github/try.sh in a new container that has
+# only the package; both Debian 13) - nothing is published.
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build and try on Debian 13
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Build the package
+        run: >
+          docker run --rm -v "$PWD:/src" -w /src debian:13
+          sh .github/build.sh
+      - name: Standard MIB files for the trial
+        run: sh .github/try-mibs.sh "$RUNNER_TEMP/mibs"
+      - name: Install it on a machine without a compiler and poll an agent
+        run: >
+          docker run --rm -v "$PWD:/src:ro"
+          -v "$RUNNER_TEMP/mibs:/mibs:ro" -e TRY_MIBS=/mibs
+          -w /src debian:13
+          sh .github/try.sh

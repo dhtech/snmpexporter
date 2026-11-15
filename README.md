@@ -25,7 +25,48 @@ Compared to the official Prometheus SNMP exporter, this exporter is more
 flexible as it knows how to read MIBs. That's basically it. It has some
 minor annotation features that might be useful, but nothing extraordinary.
 
-## Installation
+## Debian package
+
+A tag `vX.Y.Z` (the version in the file `VERSION`) makes CI build, try
+and publish `snmpexporter_X.Y.Z_amd64.deb` on a GitHub release. It is
+built on Debian 13 for Debian 13's own Python and Net-SNMP, so a server
+that installs it needs no compiler:
+
+```
+apt install ./snmpexporter_X.Y.Z_amd64.deb
+```
+
+What is in it:
+
+ * `/usr/sbin/snmpexporterd` and `/usr/bin/snmpexport`, the two programs
+   (see Running), with their code, the compiled MIB resolver and the
+   Net-SNMP Python module in `/usr/lib/snmpexporter`. The Python module
+   is in no Debian package; it is a release of
+   [our fork of python3-netsnmp](https://github.com/dhtech/python3-netsnmp),
+   named and checksummed in `.github/build.sh`.
+ * `snmpexporterd@.service`: one instance per port
+   (`systemctl enable --now snmpexporterd@9190`), running as the account
+   `snmpexporter`, which the package creates. Nothing is enabled or
+   started by the installation.
+ * `/etc/snmpexporter/snmpexporter.yaml`: what is collected from which
+   model.
+
+What it needs from you:
+
+ * `/etc/snmpexporter/auth.yaml`: the credentials per layer (example in
+   `/usr/share/doc/snmpexporter/examples/`), readable for the group
+   `snmpexporter` only.
+ * MIB files. The package holds none. `/etc/default/snmpexporter` says
+   where they are (`MIBDIRS`, `MIBS`) and can add switches for the
+   daemons (`SNMPEXPORTERD_OPTS`, e.g. `--address 127.0.0.1`); example in
+   the same directory. `snmpexport` reads the same file, so a poll by
+   hand resolves names as the daemons do.
+
+`.github/build.sh` builds the package and `.github/try.sh` tries it: in
+a container that has only the package, it polls Debian's `snmpd` over
+SNMPv3 and SNMPv2c and checks the metrics that come back.
+
+## Installation by hand
 
 You can either install it directly or use Docker/Kubernetes to run the exporter.
 

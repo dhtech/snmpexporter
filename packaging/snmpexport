@@ -1,0 +1,18 @@
+#!/bin/sh
+# snmpexport (one poll, printed) with this machine's settings - the
+# same /etc/default/snmpexporter the daemons read, so a poll by hand
+# resolves names as they do:
+#
+#   snmpexport --annotate <device> <layer>
+#
+# It reads the devices' credentials: root, or a member of the group
+# snmpexporter.
+set -e
+if [ -r /etc/default/snmpexporter ]; then
+    set -a
+    . /etc/default/snmpexporter
+    set +a
+fi
+exec /usr/bin/python3 /usr/lib/snmpexporter/snmpexport.py \
+    --config "${SNMPEXPORTER_CONFIG:-/etc/snmpexporter/snmpexporter.yaml}" \
+    "$@"

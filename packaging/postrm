@@ -1,0 +1,11 @@
+#!/bin/sh
+set -e
+if [ -d /run/systemd/system ]; then
+    systemctl daemon-reload || true
+fi
+# purge: what the daemons kept (Net-SNMP's index of the MIB files). The
+# account stays, as accounts do.
+if [ "$1" = purge ]; then
+    rm -rf /var/lib/snmpexporter
+fi
+exit 0

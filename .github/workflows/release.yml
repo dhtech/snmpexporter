@@ -1,0 +1,55 @@
+name: release
+
+# Pushing a tag vX.Y.Z builds snmpexporter as a Debian package on
+# Debian 13, for Debian 13's own Python and Net-SNMP
+# (.github/build.sh), installs it in a new container that has only the
+# package and polls an SNMP agent with it (.github/try.sh), and
+# publishes on a GitHub release:
+#
+#   snmpexporter_X.Y.Z_amd64.deb   the two programs, the compiled MIB
+#                                  resolver, the netsnmp module, the unit
+#   SHA256SUMS
+#
+# so that no server needs a compiler.
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Build, try and publish for Debian 13
+    runs-on: ubuntu-latest
+    if: github.repository_owner == 'dhtech'
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: The tag is the version in the source
+        run: |
+          version=$(cat VERSION)
+          test "v${version}" = "${GITHUB_REF_NAME}" || { echo "tag ${GITHUB_REF_NAME}, but VERSION says ${version}"; exit 1; }
+
+      - name: Build the package
+        run: >
+          docker run --rm -v "$PWD:/src" -w /src debian:13
+          sh .github/build.sh
+
+      - name: Standard MIB files for the trial
+        run: sh .github/try-mibs.sh "$RUNNER_TEMP/mibs"
+
+      - name: Install it on a machine without a compiler and poll an agent
+        run: >
+          docker run --rm -v "$PWD:/src:ro"
+          -v "$RUNNER_TEMP/mibs:/mibs:ro" -e TRY_MIBS=/mibs
+          -w /src debian:13
+          sh .github/try.sh
+
+      - name: Publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: >
+          gh release create "${GITHUB_REF_NAME}" dist/*
+          --title "${GITHUB_REF_NAME}" --generate-notes

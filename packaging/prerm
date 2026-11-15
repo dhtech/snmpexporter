@@ -1,0 +1,12 @@
+#!/bin/sh
+set -e
+if [ "$1" = remove ] && command -v systemctl >/dev/null 2>&1; then
+    if [ -d /run/systemd/system ]; then
+        systemctl stop 'snmpexporterd@*.service' || true
+    fi
+    for link in /etc/systemd/system/*.wants/snmpexporterd@*.service; do
+        [ -L "$link" ] || continue
+        systemctl disable "$(basename "$link")" >/dev/null 2>&1 || true
+    done
+fi
+exit 0

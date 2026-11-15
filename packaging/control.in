@@ -1,0 +1,25 @@
+Package: snmpexporter
+Version: @VERSION@
+Architecture: @ARCH@
+Maintainer: dhtech <dhtech@users.noreply.github.com>
+Installed-Size: @SIZE@
+Depends: python3 (>= @PYTHON@~), python3 (<< @PYTHON_NEXT@), python3-twisted, python3-yaml, python3-objgraph, @LIBSNMP@, libc6 (>= @GLIBC@), passwd
+Section: net
+Priority: optional
+Homepage: https://github.com/dhtech/snmpexporter
+Description: SNMP exporter for Prometheus that reads MIBs (snmpexporterd)
+ snmpexporterd polls a device over SNMP when Prometheus asks it to
+ (/probe?target=<device>&layer=<layer>) and answers with the device's
+ values as metrics, named from the MIBs and labelled by joining tables
+ (an interface counter carries the interface's name and description).
+ snmpexport does one such poll from the command line.
+ .
+ The package holds the program, its compiled MIB resolver and the
+ Net-SNMP Python module it polls with, built from
+ github.com/dhtech/python3-netsnmp:
+ @NETSNMP@.
+ It holds no MIB files: where they are is said in
+ /etc/default/snmpexporter (MIBDIRS, MIBS).
+ .
+ The unit snmpexporterd@<port>.service is installed; a first
+ installation neither enables nor starts an instance.

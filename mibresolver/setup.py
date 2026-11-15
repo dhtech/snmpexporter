@@ -1,4 +1,11 @@
-from distutils.core import setup, Extension
+import os
 
-setup(name='mibresolver', version='0.1', ext_modules=[
+from setuptools import setup, Extension
+
+# the one version of this program: the file VERSION at the top
+here = os.path.dirname(os.path.abspath(__file__))
+with open(os.path.join(here, '..', 'VERSION')) as f:
+  version = f.read().strip()
+
+setup(name='mibresolver', version=version, ext_modules=[
   Extension('mibresolver', sources=['mibresolver.c'], libraries=['netsnmp'])])

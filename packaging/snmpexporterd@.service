@@ -1,0 +1,25 @@
+[Unit]
+Description=SNMP exporter for Prometheus on port %i
+Documentation=https://github.com/dhtech/snmpexporter
+After=network.target
+
+[Service]
+Type=simple
+User=snmpexporter
+Group=snmpexporter
+# the instance name is the port. More switches and where the MIB files
+# are: /etc/default/snmpexporter (read by /usr/sbin/snmpexporterd)
+ExecStart=/usr/sbin/snmpexporterd --port %i
+Restart=on-failure
+RestartSec=5
+# Net-SNMP keeps its index of the MIB directories here, one per
+# instance, so a start does not read every MIB file again
+StateDirectory=snmpexporter/%i
+Environment=SNMP_PERSISTENT_DIR=%S/snmpexporter/%i
+NoNewPrivileges=yes
+ProtectSystem=full
+ProtectHome=yes
+PrivateTmp=yes
+
+[Install]
+WantedBy=multi-user.target

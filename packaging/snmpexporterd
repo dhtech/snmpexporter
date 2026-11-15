@@ -1,0 +1,16 @@
+#!/bin/sh
+# snmpexporterd with this machine's settings: /etc/default/snmpexporter
+# is read as shell assignments and handed to the program as its
+# environment - Net-SNMP's MIBDIRS and MIBS (where the MIB files are,
+# which to load), and SNMPEXPORTERD_OPTS (more switches for the
+# daemon). What is given here on the command line comes last and wins.
+set -e
+if [ -r /etc/default/snmpexporter ]; then
+    set -a
+    . /etc/default/snmpexporter
+    set +a
+fi
+# shellcheck disable=SC2086
+exec /usr/bin/python3 /usr/lib/snmpexporter/snmpexporterd.py \
+    --config "${SNMPEXPORTER_CONFIG:-/etc/snmpexporter/snmpexporter.yaml}" \
+    ${SNMPEXPORTERD_OPTS:-} "$@"

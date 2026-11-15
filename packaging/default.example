@@ -1,0 +1,18 @@
+# /etc/default/snmpexporter - this machine's settings for snmpexporterd
+# and snmpexport. Shell assignments; everything set here is in the
+# programs' environment. The package installs no such file: without
+# one, Net-SNMP looks for MIB files where it does by default.
+
+# Where the MIB files are (Net-SNMP's MIBDIRS: directories, ':' between
+# them, no recursion - name each directory that holds files) and which
+# of them to load (MIBS; ALL = every file found).
+#MIBDIRS=/var/lib/mibs/std:/var/lib/mibs/std/juniper:/var/lib/mibs/std/cisco
+#MIBS=ALL
+
+# More switches for every snmpexporterd instance (the port comes from
+# the unit's instance name: snmpexporterd@9190.service).
+#SNMPEXPORTERD_OPTS="--address 127.0.0.1 --poller-pool=50 --annotator-pool=15"
+
+# Another collection file than /etc/snmpexporter/snmpexporter.yaml
+# (auth.yaml is read from the same directory as this file).
+#SNMPEXPORTER_CONFIG=/etc/snmpexporter/snmpexporter.yaml

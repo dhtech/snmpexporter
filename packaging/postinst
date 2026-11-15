@@ -1,0 +1,22 @@
+#!/bin/sh
+set -e
+# The account the daemons run as. The credentials of the devices
+# (/etc/snmpexporter/auth.yaml, which this package does not hold) are
+# for root and this account alone.
+if [ "$1" = configure ]; then
+    if ! getent passwd snmpexporter >/dev/null; then
+        useradd --system --user-group --no-create-home \
+            --home-dir /nonexistent --shell /usr/sbin/nologin snmpexporter
+    fi
+    chown root:snmpexporter /etc/snmpexporter
+    chmod 750 /etc/snmpexporter
+fi
+# A first installation starts nothing: the daemons need the credentials
+# and the MIB files, and whoever installs the package decides which
+# ports run. On an upgrade, the instances that are running continue as
+# the new version.
+if [ "$1" = configure ] && [ -d /run/systemd/system ]; then
+    systemctl daemon-reload || true
+    systemctl try-restart 'snmpexporterd@*.service' || true
+fi
+exit 0

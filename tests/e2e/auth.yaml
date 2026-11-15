@@ -1,0 +1,14 @@
+# the layers of .github/try.sh: the agent of snmpd.conf, asked both ways
+try3:
+  version: 3
+  user: tryuser
+  sec_level: authPriv
+  auth_proto: SHA
+  auth: try-auth-passphrase
+  priv_proto: AES
+  priv: try-priv-passphrase
+  port: 1161
+try2:
+  version: 2
+  community: trycommunity
+  port: 1161
