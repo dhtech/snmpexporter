@@ -125,6 +125,30 @@ for pid in $daemons; do
 done
 echo "snmpexporterd runs as snmpexporter (uid $(id -u snmpexporter))"
 
+# a poller process that dies takes the pool with it: the daemon says so
+# and ends with a failure, for the unit to start it again
+victim=${daemons##* }
+worker=$(python3 -B - "$victim" <<'EOF2'
+import os, sys
+for pid in os.listdir('/proc'):
+    if pid.isdigit():
+        try:
+            stat = open('/proc/%s/stat' % pid).read()
+        except OSError:
+            continue
+        if stat.rsplit(')', 1)[1].split()[1] == sys.argv[1]:
+            print(pid)
+            break
+EOF2
+)
+test -n "$worker" || { echo "the daemon $victim has no poller process"; fail; }
+kill -9 "$worker"
+check "http://127.0.0.1:9191/probe?target=127.0.0.1&layer=try3" --status 500
+code=0; wait "$victim" || code=$?
+test "$code" = 1 || { echo "the daemon ended with $code, not 1"; fail; }
+grep -F 'The poller pool is broken' /tmp/9191.log || fail
+daemons=${daemons% *}
+
 # 4. one poll by hand
 SNMPEXPORTER_CONFIG=/etc/snmpexporter/try.yaml \
     snmpexport --annotate 127.0.0.1 try2 > /tmp/by-hand.txt || fail

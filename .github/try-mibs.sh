@@ -13,7 +13,7 @@ for mib in SNMPv2-SMI SNMPv2-TC SNMPv2-CONF SNMPv2-MIB IANAifType-MIB IF-MIB; do
     curl --fail --silent --show-error --location --retry 3 \
         -o "$dir/$mib" \
         "https://raw.githubusercontent.com/librenms/librenms/$LIBRENMS/mibs/$mib"
-    grep -q "^$mib DEFINITIONS" "$dir/$mib" || {
+    grep -Eq "^[[:space:]]*$mib DEFINITIONS" "$dir/$mib" || {
         echo "$mib: not the MIB module of that name"; exit 1; }
 done
 ls -l "$dir"

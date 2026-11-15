@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
 import argparse
 from concurrent import futures
+from concurrent.futures.process import BrokenProcessPool
 import functools
 import logging
 import objgraph
+import signal
 import sys
 import threading
 
@@ -25,6 +27,18 @@ tls.snmpimpl = None
 # Used to test health of the executors
 def do_nothing():
   pass
+
+
+def poller_init():
+  # A poller process is a fork of the server and inherits the reactor's
+  # signal handlers, which only ask a reactor to stop - and here there
+  # is none running. Left like that, a poller cannot be terminated: when
+  # one poller dies, the executor terminates the others and waits for
+  # them forever, holding the lock every new poll needs, and the whole
+  # server hangs. So: die on SIGTERM like any process; an interrupt
+  # from the terminal is the server's to handle.
+  signal.signal(signal.SIGTERM, signal.SIG_DFL)
+  signal.signal(signal.SIGINT, signal.SIG_IGN)
 
 
 def poll(config, host, layer):
@@ -88,7 +102,7 @@ class PollerResource(resource.Resource):
     # Use process pollers as netsnmp is not behaving well using just threads
     logging.debug('Starting poller pool ...')
     self.poller_executor = futures.ProcessPoolExecutor(
-        max_workers=poller_pool)
+        max_workers=poller_pool, initializer=poller_init)
     # Start MIB resolver after processes above (or it will fork it as well)
     logging.debug('Initializing MIB resolver ...')
     import mibresolver
@@ -99,6 +113,30 @@ class PollerResource(resource.Resource):
     self.annotator_executor = futures.ThreadPoolExecutor(
         max_workers=annotator_pool)
     self.config_file = config_file
+    self.broken = False
+
+  def _pool_broken(self):
+    # A poller process died (killed, or crashed inside Net-SNMP). The
+    # executor refuses every poll from then on and nothing here can mend
+    # it: end, with a failure, so that whoever started us (systemd,
+    # Kubernetes) starts us again. Runs in the reactor thread.
+    if self.broken:
+      return
+    self.broken = True
+    logging.critical('The poller pool is broken (a poller process died), '
+                     'exiting')
+    # in a moment: the answers under way are written first
+    reactor.callLater(1, reactor.stop)
+
+  def _submit_poll(self, request, fn, *args):
+    """Hand FN to the poller pool; None (and a 500) if the pool is gone."""
+    try:
+      return self.poller_executor.submit(fn, *args)
+    except BrokenProcessPool as e:
+      request.setResponseCode(500, message=(
+          'Poller failed: %s' % repr(e)).encode())
+      self._pool_broken()
+      return None
 
   def _response_failed(self, err, f):
     logging.debug('Request cancelled, cancelling future %s', f)
@@ -126,6 +164,8 @@ class PollerResource(resource.Resource):
   def _poll_done(self, config, request, f):
     if f.exception():
       logging.error('Poller failed: %s', repr(f.exception()))
+      if isinstance(f.exception(), BrokenProcessPool):
+        self._pool_broken()
       request.setResponseCode(500, message=(
           'Poller failed: %s' % repr(f.exception())).encode())
       request.finish()
@@ -153,8 +193,9 @@ class PollerResource(resource.Resource):
 
   def objects(self, request):
     types = objgraph.most_common_types(limit=1000)
-    request.write('# HELP objgraph_objects active objects in memory'.encode())
-    request.write('# TYPE objgraph_objects gauge'.encode())
+    request.write(
+        '# HELP objgraph_objects active objects in memory\n'.encode())
+    request.write('# TYPE objgraph_objects gauge\n'.encode())
     for name, count in types:
       request.write(
               ('objgraph_objects{name="%s"} %s\n' % (name, count)).encode())
@@ -171,6 +212,9 @@ class PollerResource(resource.Resource):
     request.finish()
 
   def _poller_executor_healthy(self, request, completed_f):
+    if (not completed_f.cancelled() and
+        isinstance(completed_f.exception(), BrokenProcessPool)):
+      self._pool_broken()
     if completed_f.exception() or completed_f.cancelled():
       request.setResponseCode(500, message=(
           'Poller health failed: %s' % repr(completed_f.exception())).encode())
@@ -184,7 +228,9 @@ class PollerResource(resource.Resource):
   def healthy(self, request):
     # Send the healthy request through the pipeline executors to see
     # that everything works.
-    f = self.poller_executor.submit(do_nothing)
+    f = self._submit_poll(request, do_nothing)
+    if f is None:
+      return b''
     logging.debug('Starting healthy poll')
     f.add_done_callback(
             lambda f: reactor.callFromThread(
@@ -205,7 +251,9 @@ class PollerResource(resource.Resource):
 
     config = snmpexporter.config.load(self.config_file)
 
-    f = self.poller_executor.submit(poll, config, target, layer)
+    f = self._submit_poll(request, poll, config, target, layer)
+    if f is None:
+      return b''
     f.add_done_callback(
         functools.partial(self._reactor_poll_done, config, request))
 
@@ -255,3 +303,5 @@ if __name__ == '__main__':
       reactor, args.port, interface=args.address)
   endpoint.listen(factory)
   reactor.run()
+  if pr.broken:
+    sys.exit(1)

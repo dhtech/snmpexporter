@@ -10,6 +10,9 @@ Group=snmpexporter
 # the instance name is the port. More switches and where the MIB files
 # are: /etc/default/snmpexporter (read by /usr/sbin/snmpexporterd)
 ExecStart=/usr/sbin/snmpexporterd --port %i
+# a stop signals the server alone; it ends its poller processes itself
+KillMode=mixed
+# also after it ended itself because a poller process died
 Restart=on-failure
 RestartSec=5
 # Net-SNMP keeps its index of the MIB directories here, one per
