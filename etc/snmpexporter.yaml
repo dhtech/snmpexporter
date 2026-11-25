@@ -294,6 +294,27 @@ collection:
     oids:
       - .1.3.6.1.4.1.232.22 # cpqRackInfo
 
+  # The UPSes' network cards (Eaton Network-M2/M3). Every device of the
+  # layer: such a card says its own free-text name as sysDescr and no
+  # entPhysicalModelName, so there is no model to match on.
+  Eaton UPS:
+    layers:
+      - services
+    models:
+      - .*
+    oids:
+      - .1.3.6.1.2.1.33.1.2      # UPS-MIB upsBattery: status, minutes left, charge
+      - .1.3.6.1.2.1.33.1.3      # UPS-MIB upsInput: voltage, frequency
+      - .1.3.6.1.2.1.33.1.4      # UPS-MIB upsOutput: source, load, voltage
+      - .1.3.6.1.2.1.33.1.6      # UPS-MIB upsAlarm: alarms present (the group - a walk of the
+                                 # value's own OID .6.1 gets nothing back) and which
+      - .1.3.6.1.4.1.534.1.2     # XUPS-MIB xupsBattery: time remaining, capacity, ABM state
+      - .1.3.6.1.4.1.534.1.3     # XUPS-MIB xupsInput
+      - .1.3.6.1.4.1.534.1.4     # XUPS-MIB xupsOutput
+      - .1.3.6.1.4.1.534.1.6     # XUPS-MIB xupsEnvironment: ambient temperature, humidity
+      - .1.3.6.1.4.1.534.1.7     # XUPS-MIB xupsAlarm: alarms present and which
+      - .1.3.6.1.4.1.534.1.8     # XUPS-MIB xupsTest: the last battery test
+
   ASR9K:
     models:
       - .*ASR9K.*
