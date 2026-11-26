@@ -118,6 +118,20 @@ for layer in try3 try2; do
         --has '^snmp_export_errors 0$' --has '^snmp_export_timeouts 0$' \
         --lacks 'DUMMY-MIB'
 done
+# what it writes. A device that does not answer is ONE line, with the
+# device in it and no traceback; an answer writes no line at all
+# (nothing listens at 127.0.0.5)
+check 'http://127.0.0.1:9191/probe?target=127.0.0.5&layer=try3' --status 500
+test "$(grep -c 'Poller failed: ' /tmp/9191.log)" = 1 || {
+    echo 'a silent device is not exactly one "Poller failed" line'; fail; }
+grep -F 'Poller failed: ' /tmp/9191.log | grep -qF '127.0.0.5' || {
+    echo 'the line does not name the device'; fail; }
+if grep -F 'Traceback' /tmp/9191.log; then
+    echo 'a traceback for a device that does not answer'; fail; fi
+if grep -F 'GET /probe' /tmp/9190.log /tmp/9191.log; then
+    echo 'a line for a request'; fail; fi
+echo "a silent device is one line: $(grep -F 'Poller failed: ' /tmp/9191.log | cut -c1-120)"
+
 # what it runs as
 for pid in $daemons; do
     uid=$(awk '/^Uid:/ {print $2}' "/proc/$pid/status")

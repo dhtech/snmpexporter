@@ -12,6 +12,7 @@ import threading
 import snmpexporter
 import snmpexporter.config
 import snmpexporter.prometheus
+import snmpexporter.snmp
 
 from twisted.internet import reactor, task, endpoints
 from twisted.python import log
@@ -22,6 +23,15 @@ from twisted.web import server, resource
 # thread-local, but why not.
 tls = threading.local()
 tls.snmpimpl = None
+
+
+# What a device may do to us and we expect: it does not answer, or it
+# answers with an SNMP error. Whoever asked for the poll says that in
+# ONE line ("Poller failed: ..."), with the device's name in it. A
+# traceback adds nothing to it - and with one, a hall of switches that
+# are not plugged in yet filled the log with hundreds of megabytes a
+# day, seventeen lines for every poll of every silent switch.
+EXPECTED_POLL_ERRORS = (TimeoutError, snmpexporter.snmp.Error)
 
 
 # Used to test health of the executors
@@ -65,7 +75,11 @@ def poll(config, host, layer):
     target.add_errors(errors)
 
     return target, data
+  except EXPECTED_POLL_ERRORS:
+    # said by the caller, in one line
+    raise
   except:
+    # anything else is a fault of ours: here the traceback is the point
     logging.exception('Poll exception')
     raise
 
@@ -92,6 +106,18 @@ def annotate(config, resolver, f):
   except:
     logging.exception('Annotate exception')
     raise
+
+
+class QuietSite(server.Site):
+  """A site that writes no line for a request.
+
+  Prometheus asks about every device at every scrape; a line for each
+  answer says nothing that its own numbers do not say, and a poll that
+  failed has its own line. --access-log brings the lines back.
+  """
+
+  def log(self, request):
+    pass
 
 
 class PollerResource(resource.Resource):
@@ -279,6 +305,9 @@ if __name__ == '__main__':
   parser.add_argument('--address', dest='address', type=str,
           help='IPv4 address to listen on (default: every address)',
           default='')
+  parser.add_argument('--access-log', dest='access_log',
+          action='store_true',
+          help='write a line for every request (default: none)')
   args = parser.parse_args()
 
   # Logging setup
@@ -296,7 +325,7 @@ if __name__ == '__main__':
   pr = PollerResource(
       args.config_file, args.poller_pool, args.annotator_pool)
 
-  factory = server.Site(pr)
+  factory = (server.Site if args.access_log else QuietSite)(pr)
 
   logging.debug('Starting web server on port %d', args.port)
   endpoint = endpoints.TCP4ServerEndpoint(
