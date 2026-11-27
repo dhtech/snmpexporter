@@ -13,6 +13,8 @@ UPS_BATTERY = '.1.3.6.1.2.1.33.1.2'
 UPS_ALARM = '.1.3.6.1.2.1.33.1.6'
 XUPS_ENVIRONMENT = '.1.3.6.1.4.1.534.1.6'
 RACK_INFO = '.1.3.6.1.4.1.232.22'
+FRU_NAME = '.1.3.6.1.4.1.2636.3.1.15.1.5'
+FRU_STATE = '.1.3.6.1.4.1.2636.3.1.15.1.8'
 SYS_UPTIME = '.1.3.6.1.2.1.1.3'
 
 
@@ -49,6 +51,24 @@ class TestCollection(unittest.TestCase):
   def testOtherServicesCollectionStillNeedsItsModel(self):
     self.assertNotIn(RACK_INFO, oids_for('services', 'Gigabit Network Card 3'))
     self.assertIn(RACK_INFO, oids_for('services', 'HP Onboard Administrator c7000'))
+
+  def testJuniperSwitchAndRouterAreAskedForFruState(self):
+    # the state of power supplies and fans, with the name to label it by
+    for layer in ('access', 'dist', 'core'):
+      for model in ('Juniper Networks, Inc. ex4300-24t Ethernet Switch',
+                    'Juniper Networks, Inc. qfx5120-48y Ethernet Switch',
+                    'Juniper Networks, Inc. MX204 Edge Router',
+                    '750-000000'):
+        oids = oids_for(layer, model)
+        self.assertIn(FRU_STATE, oids, (layer, model))
+        self.assertIn(FRU_NAME, oids, (layer, model))
+
+  def testFruStateIsForJuniperSwitchAndRouterOnly(self):
+    for model in ('WS-C2960X-48LPD-L', 'Gigabit Network Card 3',
+                  'Juniper Networks, Inc. srx300 internet router',
+                  '710-000000'):
+      for layer in ('access', 'dist', 'core', 'firewall', 'services'):
+        self.assertNotIn(FRU_STATE, oids_for(layer, model), (layer, model))
 
 
 if __name__ == '__main__':
